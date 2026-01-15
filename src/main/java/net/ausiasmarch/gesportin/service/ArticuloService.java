@@ -42,13 +42,11 @@ public class ArticuloService {
                 .orElseThrow(() -> new ResourceNotFoundException("Articulo no encontrado con id: " + id));
     }
 
-    public Page<ArticuloEntity> getPage(Pageable pageable, String descripcion, Long idTipoarticulo, Long idClub) {
+    public Page<ArticuloEntity> getPage(Pageable pageable, String descripcion, Long idTipoarticulo) {
         if (descripcion != null && !descripcion.isEmpty()) {
             return oArticuloRepository.findByDescripcionContainingIgnoreCase(descripcion, pageable);
         } else if (idTipoarticulo != null) {
-            return oArticuloRepository.findByIdTipoarticulo(idTipoarticulo, pageable);
-        } else if (idClub != null) {
-            return oArticuloRepository.findByIdClub(idClub, pageable);
+            return oArticuloRepository.findByIdTipoarticulo(idTipoarticulo, pageable);        
         } else {
             return oArticuloRepository.findAll(pageable);
         }
@@ -67,8 +65,7 @@ public class ArticuloService {
         oArticuloExistente.setPrecio(oArticuloEntity.getPrecio());
         oArticuloExistente.setDescuento(oArticuloEntity.getDescuento());
         oArticuloExistente.setImagen(oArticuloEntity.getImagen());
-        oArticuloExistente.setIdTipoarticulo(oArticuloEntity.getIdTipoarticulo());
-        oArticuloExistente.setIdClub(oArticuloEntity.getIdClub());
+        oArticuloExistente.setIdTipoarticulo(oArticuloEntity.getIdTipoarticulo());        
         
         return oArticuloRepository.save(oArticuloExistente);
     }
@@ -96,8 +93,7 @@ public class ArticuloService {
             oArticulo.setDescripcion(descripciones[i % descripciones.length] + " " + (i + 1));
             oArticulo.setPrecio(BigDecimal.valueOf(random.nextDouble() * 100 + 5).setScale(2, RoundingMode.HALF_UP));
             oArticulo.setDescuento(random.nextBoolean() ? BigDecimal.valueOf(random.nextDouble() * 30).setScale(2, RoundingMode.HALF_UP) : null);
-            oArticulo.setIdTipoarticulo((Long) (long) (Long) (long)(random.nextInt(50) + 1));
-            oArticulo.setIdClub((Long) (long) (random.nextInt(50) + 1));
+            oArticulo.setIdTipoarticulo((Long) (long) (Long) (long)(random.nextInt(50) + 1));            
             oArticuloRepository.save(oArticulo);
         }
         return cantidad;

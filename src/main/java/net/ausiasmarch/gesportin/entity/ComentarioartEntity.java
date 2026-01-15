@@ -1,44 +1,37 @@
 package net.ausiasmarch.gesportin.entity;
 
-import java.math.BigDecimal;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "articulo")
+@Table(name = "comentarioart")
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class ArticuloEntity {
-
+@AllArgsConstructor
+public class ComentarioartEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    private String descripcion;
+    @NotNull
+    @Size(min = 3, max = 1024)
+    private String contenido;
 
     @NotNull
-    private BigDecimal precio;
-
-    private BigDecimal descuento;
-
-    @Lob
-    private byte[] imagen;
+    @Column(name = "id_articulo", nullable = false)
+    private Long idArticulo;
 
     @NotNull
-    @Column(name = "id_tipoarticulo")
-    private Long idTipoarticulo;
+    @Column(name = "id_usuario", nullable = false)
+    private Long idUsuario;
 
 }
