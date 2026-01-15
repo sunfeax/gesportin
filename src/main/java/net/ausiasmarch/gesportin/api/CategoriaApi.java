@@ -14,55 +14,54 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.ausiasmarch.gesportin.entity.NoticiaEntity;
-import net.ausiasmarch.gesportin.service.NoticiaService;
+import net.ausiasmarch.gesportin.entity.CategoriaEntity;
+import net.ausiasmarch.gesportin.service.CategoriaService;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/noticia")
-public class NoticiaApi {
-
+@RequestMapping("/categoria")
+public class CategoriaApi {
+    
     @Autowired
-    private NoticiaService oNoticiaService;
+    private CategoriaService oCategoriaService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<NoticiaEntity> get(@PathVariable Long id) {
-        return ResponseEntity.ok(oNoticiaService.get(id));
+    public ResponseEntity<CategoriaEntity> get(@PathVariable Long id) {
+        return ResponseEntity.ok(oCategoriaService.get(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<NoticiaEntity>> getPage(Pageable oPageable) {
-        return ResponseEntity.ok(oNoticiaService.getPage(oPageable));
+    public ResponseEntity<Page<CategoriaEntity>> getPage(Pageable pageable) {
+        return ResponseEntity.ok(oCategoriaService.getPage(pageable));
     }
 
     @PostMapping
-    public ResponseEntity<NoticiaEntity> create(@RequestBody NoticiaEntity noticiaEntity) {
-        return ResponseEntity.ok(oNoticiaService.create(noticiaEntity));
+    public ResponseEntity<CategoriaEntity> create(@RequestBody CategoriaEntity categoriaEntity) {
+        return ResponseEntity.ok(oCategoriaService.create(categoriaEntity));
     }
 
     @PutMapping
-    public ResponseEntity<NoticiaEntity> update(@RequestBody NoticiaEntity noticiaEntity) {
-        return ResponseEntity.ok(oNoticiaService.update(noticiaEntity));
+    public ResponseEntity<CategoriaEntity> update(@RequestBody CategoriaEntity categoriaEntity) {
+        return ResponseEntity.ok(oCategoriaService.update(categoriaEntity));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Long> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(oNoticiaService.delete(id));
+        return ResponseEntity.ok(oCategoriaService.delete(id));
     }
 
     @GetMapping("/fill/{cantidad}")
     public ResponseEntity<Long> fill(@PathVariable Long cantidad) {
-        return ResponseEntity.ok(oNoticiaService.fill(cantidad));
+        return ResponseEntity.ok(oCategoriaService.fill(cantidad));
     }
 
     @DeleteMapping("/empty")
     public ResponseEntity<Long> empty() {
-        return ResponseEntity.ok(oNoticiaService.empty());
+        return ResponseEntity.ok(oCategoriaService.empty());
     }
 
     @GetMapping("/count")
     public ResponseEntity<Long> count() {
-        return ResponseEntity.ok(oNoticiaService.count());
+        return ResponseEntity.ok(oCategoriaService.count());
     }
-
-}
+} 

@@ -16,64 +16,57 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.ausiasmarch.gesportin.entity.ArticuloEntity;
-import net.ausiasmarch.gesportin.service.ArticuloService;
+import net.ausiasmarch.gesportin.entity.TipoarticuloEntity;
+import net.ausiasmarch.gesportin.service.TipoarticuloService;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/articulo")
-public class ArticuloApi {
+@RequestMapping("/tipoarticulo")
+public class TipoarticuloApi {
 
     @Autowired
-    private ArticuloService oArticuloService;
+    private TipoarticuloService oTipoarticuloService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<ArticuloEntity> get(@PathVariable Long id) {
-        return ResponseEntity.ok(oArticuloService.get(id));
+    public ResponseEntity<TipoarticuloEntity> get(@PathVariable Long id) {
+        return ResponseEntity.ok(oTipoarticuloService.get(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<ArticuloEntity>> getPage(
+    public ResponseEntity<Page<TipoarticuloEntity>> getPage(
             @PageableDefault(size = 1000) Pageable pageable,
             @RequestParam(required = false) String descripcion,
-            @RequestParam(required = false) Long idTipoarticulo,
             @RequestParam(required = false) Long idClub) {
-        return ResponseEntity.ok(oArticuloService.getPage(pageable, descripcion, idTipoarticulo, idClub));
+        return ResponseEntity.ok(oTipoarticuloService.getPage(pageable, descripcion, idClub));
     }
 
     @PostMapping
-    public ResponseEntity<ArticuloEntity> create(@RequestBody ArticuloEntity articulo) {
-        return ResponseEntity.ok(oArticuloService.create(articulo));
+    public ResponseEntity<TipoarticuloEntity> create(@RequestBody TipoarticuloEntity tipoarticulo) {
+        return ResponseEntity.ok(oTipoarticuloService.create(tipoarticulo));
     }
 
     @PutMapping
-    public ResponseEntity<ArticuloEntity> update(@RequestBody ArticuloEntity articulo) {
-        return ResponseEntity.ok(oArticuloService.update(articulo));
+    public ResponseEntity<TipoarticuloEntity> update(@RequestBody TipoarticuloEntity tipoarticulo) {
+        return ResponseEntity.ok(oTipoarticuloService.update(tipoarticulo));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Long> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(oArticuloService.delete(id));
+        return ResponseEntity.ok(oTipoarticuloService.delete(id));
     }
 
     @GetMapping("/fill/{cantidad}")
     public ResponseEntity<Long> fill(@PathVariable Long cantidad) {
-        return ResponseEntity.ok(oArticuloService.fill(cantidad));
-    }
-
-    @GetMapping("/fill")
-    public ResponseEntity<Long> fillDefault() {
-        return ResponseEntity.ok(oArticuloService.fill(50L));
+        return ResponseEntity.ok(oTipoarticuloService.fill(cantidad));
     }
 
     @DeleteMapping("/empty")
     public ResponseEntity<Long> empty() {
-        return ResponseEntity.ok(oArticuloService.empty());
+        return ResponseEntity.ok(oTipoarticuloService.empty());
     }
 
     @GetMapping("/count")
     public ResponseEntity<Long> count() {
-        return ResponseEntity.ok(oArticuloService.count());
+        return ResponseEntity.ok(oTipoarticuloService.count());
     }
-
 }

@@ -2,6 +2,7 @@ package net.ausiasmarch.gesportin.entity;
 
 import java.math.BigDecimal;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,14 +10,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "compra")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class CompraEntity {
@@ -26,15 +25,19 @@ public class CompraEntity {
     private Long id;
 
     @NotNull
+    @Column(nullable = false)
     private Integer cantidad;
 
     @NotNull
+    @Column(nullable = false)
     private BigDecimal precio;
 
     @NotNull
-    private Long id_articulo;
+    @Column(name = "id_articulo", nullable = false)
+    private Long idArticulo;
 
     @NotNull
-    private Long id_factura;
+    @Column(name = "id_factura", nullable = false)
+    private Long idFactura;
 
 }

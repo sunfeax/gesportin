@@ -1,5 +1,6 @@
 package net.ausiasmarch.gesportin.entity;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -8,14 +9,12 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "partido")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class PartidoEntity {
@@ -26,12 +25,14 @@ public class PartidoEntity {
 
     @NotNull
     @Size(min = 3, max = 1024)
-    private String nombre_rival;
+    private String rival;
 
     @NotNull
-    private Long id_equipo;
+    @Column(name = "id_liga", nullable = false)
+    private Long idLiga;
 
     @NotNull
+    @Column(nullable = false)
     private Boolean local;
 
     @NotNull

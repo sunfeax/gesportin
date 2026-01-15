@@ -15,69 +15,62 @@ import net.ausiasmarch.gesportin.repository.FacturaRepository;
 public class FacturaService {
 
     @Autowired
-    FacturaRepository oFacturaRepository;
+    private FacturaRepository oFacturaRepository;
+
+    @Autowired
+    private AleatorioService oAleatorioService;
 
     public FacturaEntity get(Long id) {
-    return oFacturaRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrada"));
+        return oFacturaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrado con id: " + id));
     }
 
-    public Long create(FacturaEntity facturaEntity) {
-        facturaEntity.setFecha(LocalDateTime.now());
-        Long idUsuario = facturaEntity.getId_usuario();
-        if (idUsuario <= 0) {
-            facturaEntity.setId_usuario((long)GenerarNumeroAleatorioEnRango(1, 50));
+    public Page<FacturaEntity> getPage(Pageable pageable) {
+        return oFacturaRepository.findAll(pageable);
+    }
+
+    public FacturaEntity create(FacturaEntity factura) {
+        factura.setId(null);
+        factura.setFecha(LocalDateTime.now());
+        Long idUsuario = factura.getIdUsuario();
+        if (idUsuario == null || idUsuario <= 0) {
+            factura.setIdUsuario((long) oAleatorioService.generarNumeroAleatorioEnteroEnRango(1, 50));
         }
-        oFacturaRepository.save(facturaEntity);
-        return facturaEntity.getId();
+        return oFacturaRepository.save(factura);
     }
 
-    public Long update(FacturaEntity facturaEntity) {
-        FacturaEntity existingFacturaCompra = oFacturaRepository.findById(facturaEntity.getId())
-                .orElseThrow(() -> new RuntimeException("Factura no encontrada"));
-        existingFacturaCompra.setId_usuario(facturaEntity.getId_usuario());
-        existingFacturaCompra.setFecha(LocalDateTime.now());
-        oFacturaRepository.save(existingFacturaCompra);
-        return existingFacturaCompra.getId();
+    public FacturaEntity update(FacturaEntity factura) {
+        FacturaEntity existingFactura = oFacturaRepository.findById(factura.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrado con id: " + factura.getId()));
+        existingFactura.setIdUsuario(factura.getIdUsuario());
+        existingFactura.setFecha(factura.getFecha());
+        return oFacturaRepository.save(existingFactura);
     }
 
     public Long delete(Long id) {
-        if (!oFacturaRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Factura no encontrada");
-        }
-        oFacturaRepository.deleteById(id);
-        return oFacturaRepository.count();
+        FacturaEntity factura = oFacturaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Factura no encontrado con id: " + id));
+        oFacturaRepository.delete(factura);
+        return id;
     }
 
-    public Page<FacturaEntity> getPage(Pageable oPageable) {
-        return oFacturaRepository.findAll(oPageable);
+    public Long empty() {
+        oFacturaRepository.deleteAll();
+        oFacturaRepository.flush();
+        return 0L;
     }
 
     public Long count() {
         return oFacturaRepository.count();
     }
 
-    public Long fillFacturas(int numQuestions) {
-        for (int i = 0; i < numQuestions; i++) {
-            FacturaEntity oFacturaEntity = new FacturaEntity();
-            oFacturaEntity.setFecha(LocalDateTime.now());
-            oFacturaEntity.setId_usuario((long)GenerarNumeroAleatorioEnRango(1, 50));
-            oFacturaRepository.save(oFacturaEntity);
+    public Long fill(Long cantidad) {
+        for (int i = 0; i < cantidad; i++) {
+            FacturaEntity factura = new FacturaEntity();
+            factura.setFecha(LocalDateTime.now());
+            factura.setIdUsuario((long) oAleatorioService.generarNumeroAleatorioEnteroEnRango(1, 50));
+            oFacturaRepository.save(factura);
         }
-        return oFacturaRepository.count();
-    }
-
-    public int GenerarNumeroAleatorio() {
-        return GenerarNumeroAleatorioEnRango(1, 4);
-    }
-
-    public int GenerarNumeroAleatorioEnRango(int min, int max) {
-        return (int) (Math.random() * (max - min + 1)) + min;
-    }
-
-    public Long empty() {
-        Long total = oFacturaRepository.count();
-        oFacturaRepository.deleteAll();
-        return total;
+        return cantidad;
     }
 }

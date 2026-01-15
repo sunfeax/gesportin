@@ -1,5 +1,7 @@
 package net.ausiasmarch.gesportin.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,19 +25,19 @@ public class PagoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
     }
 
-    public Long create(PagoEntity pagoEntity) {
-        oPagoRepository.save(pagoEntity);
-        return pagoEntity.getId();
+    public PagoEntity create(PagoEntity pagoEntity) {
+        pagoEntity.setId(null);
+        return oPagoRepository.save(pagoEntity);
     }
 
-    public Long update(PagoEntity pagoEntity) {
+    public PagoEntity update(PagoEntity pagoEntity) {
         PagoEntity existingPago = oPagoRepository.findById(pagoEntity.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Pago no encontrado"));
-        existingPago.setId_cuota(pagoEntity.getId_cuota());
-        existingPago.setId_usuario(pagoEntity.getId_usuario());
-        existingPago.setAbonado(pagoEntity.isAbonado());
-        oPagoRepository.save(existingPago);
-        return existingPago.getId();
+        existingPago.setIdCuota(pagoEntity.getIdCuota());
+        existingPago.setIdJugador(pagoEntity.getIdJugador());
+        existingPago.setAbonado(pagoEntity.getAbonado());
+        existingPago.setFecha(pagoEntity.getFecha());
+        return oPagoRepository.save(existingPago);
     }
 
     public Long delete(Long id) {
@@ -54,18 +56,19 @@ public class PagoService {
 
     // vaciar tabla pago
     public Long empty() {
-        Long total = oPagoRepository.count();
         oPagoRepository.deleteAll();
-        return total;
+        oPagoRepository.flush();
+        return 0L;
     }
 
     // llenar tabla pago con datos de prueba
     public Long fill(Long cantidad) {
         for (int i = 0; i < cantidad; i++) {
             PagoEntity pago = new PagoEntity();
-            pago.setId_cuota((Long) (long) oAleatorioService.GenerarNumeroAleatorioEnteroEnRango(1, 50));
-            pago.setId_usuario((Long) (long) oAleatorioService.GenerarNumeroAleatorioEnteroEnRango(1, 50));
-            pago.setAbonado(oAleatorioService.GenerarNumeroAleatorioEnteroEnRango(0, 1) == 1);
+            pago.setIdCuota((Long) (long) oAleatorioService.generarNumeroAleatorioEnteroEnRango(1, 50));
+            pago.setIdJugador((Long) (long) oAleatorioService.generarNumeroAleatorioEnteroEnRango(1, 50));
+            pago.setAbonado(oAleatorioService.generarNumeroAleatorioEnteroEnRango(0, 1));
+            pago.setFecha(LocalDateTime.now());
             oPagoRepository.save(pago);
         }
         return cantidad;

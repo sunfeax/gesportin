@@ -16,64 +16,59 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import net.ausiasmarch.gesportin.entity.ArticuloEntity;
-import net.ausiasmarch.gesportin.service.ArticuloService;
+import net.ausiasmarch.gesportin.entity.UsuarioEntity;
+import net.ausiasmarch.gesportin.service.UsuarioService;
 
 @CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600)
 @RestController
-@RequestMapping("/articulo")
-public class ArticuloApi {
+@RequestMapping("/usuario")
+public class UsuarioApi {
 
     @Autowired
-    private ArticuloService oArticuloService;
+    private UsuarioService oUsuarioService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<ArticuloEntity> get(@PathVariable Long id) {
-        return ResponseEntity.ok(oArticuloService.get(id));
+    public ResponseEntity<UsuarioEntity> get(@PathVariable Long id) {
+        return ResponseEntity.ok(oUsuarioService.get(id));
     }
 
     @GetMapping
-    public ResponseEntity<Page<ArticuloEntity>> getPage(
+    public ResponseEntity<Page<UsuarioEntity>> getPage(
             @PageableDefault(size = 1000) Pageable pageable,
-            @RequestParam(required = false) String descripcion,
-            @RequestParam(required = false) Long idTipoarticulo,
+            @RequestParam(required = false) String nombre,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) Long idTipousuario,
             @RequestParam(required = false) Long idClub) {
-        return ResponseEntity.ok(oArticuloService.getPage(pageable, descripcion, idTipoarticulo, idClub));
+        return ResponseEntity.ok(oUsuarioService.getPage(pageable, nombre, username, idTipousuario, idClub));
     }
 
     @PostMapping
-    public ResponseEntity<ArticuloEntity> create(@RequestBody ArticuloEntity articulo) {
-        return ResponseEntity.ok(oArticuloService.create(articulo));
+    public ResponseEntity<UsuarioEntity> create(@RequestBody UsuarioEntity usuario) {
+        return ResponseEntity.ok(oUsuarioService.create(usuario));
     }
 
     @PutMapping
-    public ResponseEntity<ArticuloEntity> update(@RequestBody ArticuloEntity articulo) {
-        return ResponseEntity.ok(oArticuloService.update(articulo));
+    public ResponseEntity<UsuarioEntity> update(@RequestBody UsuarioEntity usuario) {
+        return ResponseEntity.ok(oUsuarioService.update(usuario));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Long> delete(@PathVariable Long id) {
-        return ResponseEntity.ok(oArticuloService.delete(id));
+        return ResponseEntity.ok(oUsuarioService.delete(id));
     }
 
     @GetMapping("/fill/{cantidad}")
     public ResponseEntity<Long> fill(@PathVariable Long cantidad) {
-        return ResponseEntity.ok(oArticuloService.fill(cantidad));
-    }
-
-    @GetMapping("/fill")
-    public ResponseEntity<Long> fillDefault() {
-        return ResponseEntity.ok(oArticuloService.fill(50L));
+        return ResponseEntity.ok(oUsuarioService.fill(cantidad));
     }
 
     @DeleteMapping("/empty")
     public ResponseEntity<Long> empty() {
-        return ResponseEntity.ok(oArticuloService.empty());
+        return ResponseEntity.ok(oUsuarioService.empty());
     }
 
     @GetMapping("/count")
     public ResponseEntity<Long> count() {
-        return ResponseEntity.ok(oArticuloService.count());
+        return ResponseEntity.ok(oUsuarioService.count());
     }
-
 }

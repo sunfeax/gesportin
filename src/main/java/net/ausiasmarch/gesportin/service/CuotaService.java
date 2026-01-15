@@ -1,5 +1,6 @@
 package net.ausiasmarch.gesportin.service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Random;
 
@@ -9,65 +10,67 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import net.ausiasmarch.gesportin.entity.CuotaEntity;
+import net.ausiasmarch.gesportin.exception.ResourceNotFoundException;
 import net.ausiasmarch.gesportin.repository.CuotaRepository;
 
 @Service
 public class CuotaService {
     
     @Autowired
-    CuotaRepository oCuotaRepository;
+    private CuotaRepository oCuotaRepository;
 
     public CuotaEntity get(Long id) {
-        return oCuotaRepository.findById(id).orElseThrow(() -> new RuntimeException("Recurso not found"));
+        return oCuotaRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrado con id: " + id));
     }
 
-    public Long create(CuotaEntity cuotaEntity) {
-        cuotaEntity.setFecha(LocalDateTime.now());
-        oCuotaRepository.save(cuotaEntity);
-        return cuotaEntity.getId();
+    public Page<CuotaEntity> getPage(Pageable pageable) {
+        return oCuotaRepository.findAll(pageable);
     }
 
-    public Long update(CuotaEntity cuotaEntity) {
-        CuotaEntity existingBlog = oCuotaRepository.findById(cuotaEntity.getId())
-                .orElseThrow(() -> new RuntimeException("Recurso not found"));
-        existingBlog.setDescripcion(cuotaEntity.getDescripcion());
-        oCuotaRepository.save(existingBlog);
-        return existingBlog.getId();
+    public CuotaEntity create(CuotaEntity cuota) {
+        cuota.setId(null);
+        cuota.setFecha(LocalDateTime.now());
+        return oCuotaRepository.save(cuota);
+    }
+
+    public CuotaEntity update(CuotaEntity cuota) {
+        CuotaEntity existingCuota = oCuotaRepository.findById(cuota.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrado con id: " + cuota.getId()));
+        existingCuota.setDescripcion(cuota.getDescripcion());
+        existingCuota.setCantidad(cuota.getCantidad());
+        existingCuota.setFecha(cuota.getFecha());
+        existingCuota.setIdEquipo(cuota.getIdEquipo());
+        return oCuotaRepository.save(existingCuota);
     }
 
     public Long delete(Long id) {
-        oCuotaRepository.deleteById(id);
+        CuotaEntity cuota = oCuotaRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Cuota no encontrado con id: " + id));
+        oCuotaRepository.delete(cuota);
         return id;
     }
 
-    public Page<CuotaEntity> getPage(Pageable oPageable) {
-        return oCuotaRepository.findAll(oPageable);
+    public Long empty() {
+        oCuotaRepository.deleteAll();
+        oCuotaRepository.flush();
+        return 0L;
     }
 
     public Long count() {
         return oCuotaRepository.count();
-    }    
-
-    public Long empty() {
-        Long total = oCuotaRepository.count();
-        oCuotaRepository.deleteAll();
-        return total;
     }
 
-    public Long generarDatos(int cantidad) {
-        Random rnd = new Random();
+    public Long fill(Long cantidad) {
+        Random random = new Random();
         String[] nombres = {"Matrícula", "Mensualidad", "Cuota Extra", "Inscripción", "Cuota Anual"};
-        Long created = 0L;
         for (int i = 0; i < cantidad; i++) {
-            CuotaEntity c = new CuotaEntity();
-            c.setDescripcion(nombres[rnd.nextInt(nombres.length)] + " " + (rnd.nextInt(9000) + 1000));
-            c.setCantidad((float) (rnd.nextDouble() * 100.0 + 1.0));
-            c.setFecha(LocalDateTime.now().minusDays(rnd.nextInt(365)));
-            c.setId_temporada((Long) (long) (rnd.nextInt(5) + 1));
-            oCuotaRepository.save(c);
-            created++;
+            CuotaEntity cuota = new CuotaEntity();
+            cuota.setDescripcion(nombres[random.nextInt(nombres.length)] + " " + (random.nextInt(9000) + 1000));
+            cuota.setCantidad(BigDecimal.valueOf(random.nextDouble() * 100.0 + 1.0));
+            cuota.setFecha(LocalDateTime.now().minusDays(random.nextInt(365)));
+            cuota.setIdEquipo((long) (random.nextInt(5) + 1));
+            oCuotaRepository.save(cuota);
         }
-        return created;
+        return cantidad;
     }
-
 }

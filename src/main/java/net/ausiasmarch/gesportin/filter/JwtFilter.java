@@ -14,10 +14,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import net.ausiasmarch.gesportin.service.JWTService;
 
-
 @Component
 public class JwtFilter implements Filter {
-
 
     @Autowired
     private JWTService oJwtService;
@@ -25,17 +23,33 @@ public class JwtFilter implements Filter {
     @Override
     public void doFilter(ServletRequest request, ServletResponse response,
             FilterChain chain) throws IOException, ServletException {
-        if ("OPTIONS".equalsIgnoreCase(((HttpServletRequest) request).getMethod())) {
-            ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_OK);
+
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+        HttpServletRequest httpRequest = (HttpServletRequest) request;
+
+        // Add CORS headers
+        String origin = httpRequest.getHeader("Origin");
+        if (origin != null) {
+            httpResponse.setHeader("Access-Control-Allow-Origin", origin);
+        } else {
+            httpResponse.setHeader("Access-Control-Allow-Origin", "*");
+        }
+        httpResponse.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
+        httpResponse.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+        httpResponse.setHeader("Access-Control-Allow-Credentials", "true");
+        httpResponse.setHeader("Access-Control-Max-Age", "3600");
+
+        if ("OPTIONS".equalsIgnoreCase(httpRequest.getMethod())) {
+            httpResponse.setStatus(HttpServletResponse.SC_OK);
             chain.doFilter(request, response);
         } else {
             // aqui el código de una consulta que no es preflight
-            String authToken = ((HttpServletRequest) request).getHeader("Authorization");
+            String authToken = httpRequest.getHeader("Authorization");
             if (authToken != null && authToken.startsWith("Bearer ")) {
                 authToken = authToken.substring(7);
                 // debug
-                System.out.println("Method: " + ((HttpServletRequest) request).getMethod());
-                System.out.println("URL: " + ((HttpServletRequest) request).getRequestURL().toString());
+                System.out.println("Method: " + httpRequest.getMethod());
+                System.out.println("URL: " + httpRequest.getRequestURL().toString());
                 System.out.println("Auth Token: " + authToken);
                 // Validar el token JWT
                 try {
@@ -44,31 +58,27 @@ public class JwtFilter implements Filter {
                     String username = oJwtService.validate(authToken);
                     if (username != null) {
                         // Si el token es válido, continuar con la cadena de filtros
-                        ((HttpServletRequest) request).setAttribute("username", username);
+                        httpRequest.setAttribute("username", username);
                         chain.doFilter(request, response);
                     } else {
-                        ((HttpServletRequest) request).setAttribute("username", null);
+                        httpRequest.setAttribute("username", null);
                         // Si el token no es válido, devolver un error 401
-                        ((HttpServletResponse) response)
-                                .setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         return;
                     }
                 } catch (Exception e) {
-                    ((HttpServletRequest) request).setAttribute("username", null);
+                    httpRequest.setAttribute("username", null);
                     // Si el token no es válido, devolver un error 401
-                    ((HttpServletResponse) response)
-                            .setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    httpResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                     return;
                 }
             } else {
-                System.out.println("Method: " + ((HttpServletRequest) request).getMethod());
-                System.out.println("URL: " + ((HttpServletRequest) request).getRequestURL().toString());
+                System.out.println("Method: " + httpRequest.getMethod());
+                System.out.println("URL: " + httpRequest.getRequestURL().toString());
                 System.out.println("Auth Token: No se ha proporcionado");
-                ((HttpServletRequest) request).setAttribute("username", null);
+                httpRequest.setAttribute("username", null);
                 chain.doFilter(request, response);
             }
-
         }
     }
-
 }
