@@ -87,6 +87,7 @@ public class CompraService {
         for (long j = 0; j < cantidad; j++) {
             CompraEntity oCompra = new CompraEntity();
             oCompra.setCantidad(oAleatorioService.generarNumeroAleatorioEnteroEnRango(1, 50));
+            oCompra.setPrecio(oAleatorioService.generarNumeroAleatorioDecimalEnRango(5, 500));
             Long totalArticulos = oArticuloRepository.count();
             if (totalArticulos > 0) {
                 // List<ArticuloEntity> articulos = oArticuloRepository.findAll();

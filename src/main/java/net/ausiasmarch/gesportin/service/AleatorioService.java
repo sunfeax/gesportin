@@ -8,6 +8,10 @@ public class AleatorioService {
     public int generarNumeroAleatorioEnteroEnRango(int min, int max) {
         return (int) (Math.random() * (max - min + 1)) + min;
     }
+
+    public double generarNumeroAleatorioDecimalEnRango(double min, double max) {
+        return Math.round((Math.random() * (max - min) + min) * 100.0) / 100.0;
+    }
     
     public String eliminarAcentos(String input) {
         String[][] acentos = {

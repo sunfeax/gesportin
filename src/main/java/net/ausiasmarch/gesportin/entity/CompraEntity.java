@@ -33,7 +33,7 @@ public class CompraEntity {
 
     @NotNull
     @Column(nullable = false)
-    private BigDecimal precio;
+    private double precio;
 
     @NotNull
     @ManyToOne(fetch = FetchType.EAGER)
