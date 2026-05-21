@@ -1,5 +1,4 @@
 import { Routes } from '@angular/router';
-import { Home } from './component/shared/home/home';
 import { LandingPage } from './component/shared/landing/landing';
 import { Logout } from './component/shared/logout/logout';
 import { LoginComponent } from './component/shared/login/login.component';
@@ -215,6 +214,11 @@ export const publicRoutes: Routes = [
 ];
 
 const protectedRoutes: Routes = [
+  {
+    path: 'admin/dashboard',
+    loadComponent: () => import('./page/admin/dashboard/dashboard').then((m) => m.AdminDashboardPage),
+    canActivate: [AdminGuard]
+  },
   { path: 'admin/datos', component: AdminDataToolsPage },
   { path: 'usuario', component: UsuarioAdminPlistPage },
   { path: 'usuario/tipousuario/:id_tipousuario', component: UsuarioAdminPlistPage },
@@ -394,7 +398,7 @@ const protectedRoutes: Routes = [
 export const routes: Routes = [
   ...publicRoutes,
   // Home específico de cada perfil de usuario
-  { path: 'admin', component: Home, canActivate: [AdminGuard] },
+  { path: 'admin', redirectTo: 'admin/dashboard', pathMatch: 'full' },
   { path: 'usuario/teamadmin', component: UsuarioTeamadminPlistPage, canActivate: [ClubAdminGuard] },
   { path: 'usuario/teamadmin/club/:id_club', component: UsuarioTeamadminPlistPage, canActivate: [ClubAdminGuard] },
   { path: 'club/teamadmin', component: ClubPlistTeamadminPage, canActivate: [ClubAdminGuard] },
@@ -506,6 +510,17 @@ export const routes: Routes = [
   { path: 'factura/teamadmin/view/:id', component: FacturaTeamadminViewPage, canActivate: [ClubAdminGuard] },
   { path: 'factura/teamadmin/new', component: FacturaTeamadminNewPage, canActivate: [ClubAdminGuard] },
   { path: 'factura/teamadmin/edit/:id', component: FacturaTeamadminEditPage, canActivate: [ClubAdminGuard] },
+  // Dashboard per perfil
+  {
+    path: 'mi/dashboard',
+    loadComponent: () => import('./page/usuario/mi-home/dashboard/dashboard').then((m) => m.UsuarioDashboardPage),
+    canActivate: [UsuarioGuard]
+  },
+  {
+    path: 'dashboard/teamadmin',
+    loadComponent: () => import('./page/usuario/teamadmin/dashboard/dashboard').then((m) => m.ClubAdminDashboardPage),
+    canActivate: [ClubAdminGuard]
+  },
   // Perfil propio (todos los usuarios autenticados)
   { path: 'mi/perfil', component: UsuarioPerfilPage, canActivate: [AuthGuard] },
   // Usuario (perfil 3) routes

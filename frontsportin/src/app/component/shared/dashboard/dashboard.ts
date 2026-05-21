@@ -1,223 +1,401 @@
-import { Component, OnInit, signal, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { ClubService } from '../../../service/club';
-import { NoticiaService } from '../../../service/noticia';
-import { ComentarioService } from '../../../service/comentario';
-import { PuntuacionService } from '../../../service/puntuacion';
-import { TemporadaService } from '../../../service/temporada';
-import { CategoriaService } from '../../../service/categoria';
-import { EquipoService } from '../../../service/equipo';
-import { LigaService } from '../../../service/liga';
-import { PartidoService } from '../../../service/partido';
-import { JugadorService } from '../../../service/jugador-service';
-import { CuotaService } from '../../../service/cuota';
-import { PagoService } from '../../../service/pago';
-import { ArticuloService } from '../../../service/articulo';
-import { TipoarticuloService } from '../../../service/tipoarticulo';
-import { CompraService } from '../../../service/compra';
-import { FacturaService } from '../../../service/factura-service';
-import { CarritoService } from '../../../service/carrito';
-import { ComentarioartService } from '../../../service/comentarioart';
-import { UsuarioService } from '../../../service/usuarioService';
-import { TipousuarioService } from '../../../service/tipousuario';
-import { RolusuarioService } from '../../../service/rolusuario';
-import { EstadopartidoService } from '../../../service/estadopartido';
-import { SecurityService } from '../../../service/security.service';
-import { IPage } from '../../../model/plist';
-import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 
-interface DashboardCard {
+import { SecurityService } from '../../../service/security.service';
+import { DashboardService, DashboardRawData } from '../../../service/dashboard/dashboard.service';
+import { IPage } from '../../../model/plist';
+import { Observable, timer } from 'rxjs';
+import { map, shareReplay, switchMap, tap } from 'rxjs/operators';
+
+interface DashboardKpiCard {
   title: string;
   icon: string;
   count: number;
   color: string;
+}
+
+interface QuickAccessCard {
+  title: string;
+  icon: string;
   route: string;
+  color: string;
+}
+
+interface DashboardViewModel {
+  kpiCards: DashboardKpiCard[];
+  quickAccessCards: QuickAccessCard[];
+  barChartData: ChartData<'bar'>;
+  lineChartData: ChartData<'line'>;
+  rolesDoughnutChartData: ChartData<'doughnut'>;
+  paymentStatusDoughnutChartData: ChartData<'doughnut'>;
+  sportCategoriesDoughnutChartData: ChartData<'doughnut'>;
 }
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, BaseChartDirective],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css'
 })
 export class DashboardComponent implements OnInit {
-  
+
+  private readonly refreshIntervalMs = 60_000;
+
   loading = signal(true);
-  
-  constructor(
-    private cdr: ChangeDetectorRef,
-    private clubService: ClubService,
-    private noticiaService: NoticiaService,
-    private comentarioService: ComentarioService,
-    private puntuacionService: PuntuacionService,
-    private temporadaService: TemporadaService,
-    private categoriaService: CategoriaService,
-    private equipoService: EquipoService,
-    private ligaService: LigaService,
-    private partidoService: PartidoService,
-    private jugadorService: JugadorService,
-    private cuotaService: CuotaService,
-    private pagoService: PagoService,
-    private articuloService: ArticuloService,
-    private tipoarticuloService: TipoarticuloService,
-    private compraService: CompraService,
-    private facturaService: FacturaService,
-    private carritoService: CarritoService,
-    private comentarioartService: ComentarioartService,
-    private usuarioService: UsuarioService,
-    private tipousuarioService: TipousuarioService,
-    private rolusuarioService: RolusuarioService,
-    private estadopartidoService: EstadopartidoService,
-    private security: SecurityService
-  ) {}
-  cards: DashboardCard[] = [];
+  today = new Date();
+  readonly vm$: Observable<DashboardViewModel>;
 
-  private buildCards(): DashboardCard[] {
-    const r = this.security.isClubAdmin() ? '/teamadmin' : '';
-    const allCards: DashboardCard[] = [
-      { title: 'Clubes', icon: 'building', count: 0, color: 'primary', route: r ? '/club/teamadmin' : '/club' },
-      { title: 'Noticias', icon: 'newspaper', count: 0, color: 'warning', route: '/noticia' + r },
-      { title: 'Comentarios', icon: 'chat-left-text', count: 0, color: 'info', route: '/comentario' + r },
-      { title: 'Puntuaciones', icon: 'star-fill', count: 0, color: 'secondary', route: '/puntuacion' + r },
-      { title: 'Temporadas', icon: 'calendar', count: 0, color: 'danger', route: '/temporada' + r },
-      { title: 'Categorías', icon: 'tags', count: 0, color: 'success', route: '/categoria' + r },
-      { title: 'Equipos', icon: 'people-fill', count: 0, color: 'primary', route: '/equipo' + r },
-      { title: 'Ligas', icon: 'trophy', count: 0, color: 'warning', route: '/liga' + r },
-      { title: 'Partidos', icon: 'play-fill', count: 0, color: 'info', route: '/partido' + r },
-      { title: 'Jugadores', icon: 'person-fill', count: 0, color: 'secondary', route: '/jugador' + r },
-      { title: 'Cuotas', icon: 'credit-card', count: 0, color: 'danger', route: '/cuota' + r },
-      { title: 'Pagos', icon: 'cash-coin', count: 0, color: 'success', route: '/pago' + r },
-      { title: 'Artículos', icon: 'bag-fill', count: 0, color: 'primary', route: '/articulo' + r },
-      { title: 'Tipos de Artículo', icon: 'bookmark-fill', count: 0, color: 'warning', route: '/tipoarticulo' + r },
-      { title: 'Compras', icon: 'cart-fill', count: 0, color: 'info', route: '/compra' + r },
-      { title: 'Facturas', icon: 'receipt', count: 0, color: 'secondary', route: '/factura' + r },
-      { title: 'Carritos', icon: 'bag-check', count: 0, color: 'danger', route: '/carrito' + r },
-      { title: 'Comentarios Artículos', icon: 'chat-dots', count: 0, color: 'success', route: '/comentarioart' + r },
-      { title: 'Usuarios', icon: 'people', count: 0, color: 'primary', route: '/usuario' + r },
-    ];
+  private readonly dashboardService = inject(DashboardService);
+  private readonly security = inject(SecurityService);
 
-    if (!this.security.isClubAdmin()) {
-      allCards.push(
-        { title: 'Tipos de Usuario', icon: 'tags-fill', count: 0, color: 'warning', route: '/tipousuario' },
-        { title: 'Estados de Partido', icon: 'flag-fill', count: 0, color: 'info', route: '/estadopartido' },
-        { title: 'Roles', icon: 'shield-check', count: 0, color: 'secondary', route: '/rolusuario' },
-      );
+  public readonly barChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { precision: 0 }
+      }
     }
+  };
 
-    return allCards;
-  }
+  public readonly doughnutChartOptions: ChartOptions<'doughnut'> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          color: '#1a2540',
+          font: {
+            size: 18,
+            weight: 'bold'
+          },
+          boxWidth: 14,
+          boxHeight: 14,
+          padding: 20,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        titleFont: { size: 18, weight: 'bold' },
+        bodyFont: { size: 17, weight: 'bold' },
+        footerFont: { size: 15, weight: 'normal' }
+      }
+    }
+  };
 
-  ngOnInit() {
-    this.cards = this.buildCards();
-    this.loadCounts();
-  }
+  public readonly lineChartOptions: ChartConfiguration<'line'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        labels: {
+          color: '#1a2540',
+          font: {
+            size: 18,
+            weight: 'bold'
+          },
+          boxWidth: 14,
+          boxHeight: 14,
+          padding: 18,
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        titleFont: { size: 18, weight: 'bold' },
+        bodyFont: { size: 17, weight: 'bold' },
+        footerFont: { size: 15, weight: 'normal' }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: { precision: 0 }
+      }
+    }
+  };
 
-  private countFromPage<T>(request$: Observable<IPage<T>>): Observable<number> {
-    return request$.pipe(
-      map((page) => page?.totalElements ?? page?.content?.length ?? 0),
-      catchError(() => of(0))
+  constructor() {
+    this.vm$ = timer(0, this.refreshIntervalMs).pipe(
+      tap(() => this.loading.set(true)),
+      switchMap(() => this.dashboardService.fetchDashboardData()),
+      map((raw) => this.buildViewModel(raw)),
+      tap(() => this.loading.set(false)),
+      shareReplay({ bufferSize: 1, refCount: true })
     );
   }
 
-  private buildCountRequests() {
-    if (!this.security.isClubAdmin()) {
-      return {
-        clubes: this.clubService.count(),
-        noticias: this.noticiaService.count(),
-        comentarios: this.comentarioService.count(),
-        puntuaciones: this.puntuacionService.count(),
-        temporadas: this.temporadaService.count(),
-        categorias: this.categoriaService.count(),
-        equipos: this.equipoService.count(),
-        ligas: this.ligaService.count(),
-        partidos: this.partidoService.count(),
-        jugadores: this.jugadorService.count(),
-        cuotas: this.cuotaService.count(),
-        pagos: this.pagoService.count(),
-        articulos: this.articuloService.count(),
-        tiposArticulo: this.tipoarticuloService.count(),
-        compras: this.compraService.count(),
-        facturas: this.facturaService.count(),
-        carritos: this.carritoService.count(),
-        comentariosArt: this.comentarioartService.count(),
-        usuarios: this.usuarioService.count(),
-        tiposUsuario: this.tipousuarioService.count(),
-        estadosPartido: this.estadopartidoService.count(),
-        roles: this.rolusuarioService.count()
-      };
-    }
+  ngOnInit() {
+    // El flujo reactivo de vm$ se activa con async pipe en plantilla.
+  }
 
-    // For club admins (tipo 2), use paged endpoints that already enforce club scope.
+  private buildQuickAccessCards(): QuickAccessCard[] {
+    const r = this.security.isClubAdmin() ? '/teamadmin' : '';
+
+    return [
+      { title: 'Clubes', icon: 'building', color: 'primary', route: r ? '/club/teamadmin' : '/club' },
+      { title: 'Equipos', icon: 'people-fill', color: 'success', route: '/equipo' + r },
+      { title: 'Ligas', icon: 'trophy-fill', color: 'warning', route: '/liga' + r },
+      { title: 'Partidos', icon: 'calendar2-event', color: 'info', route: '/partido' + r },
+      { title: 'Comentarios', icon: 'chat-left-text-fill', color: 'secondary', route: '/comentario' + r },
+      { title: 'Eventos', icon: 'megaphone-fill', color: 'danger', route: '/noticia' + r },
+      { title: 'Tienda', icon: 'bag-fill', color: 'primary', route: '/articulo' + r }
+    ];
+  }
+
+  // Métodos de carga y utilidad movidos a DashboardService
+
+  private buildViewModel(data: DashboardRawData): DashboardViewModel {
+    const monthKeys = this.getMonthKeys(6);
+    const monthLabels = monthKeys.map((item) => item.label);
+
+    const paymentsMonthly = this.countByMonth(data.pagosPage.content, monthKeys, (item) => item.fecha);
+    const matchesMonthly = this.countByMonth(data.partidosPage.content, monthKeys, (item) => item.fecha ?? null);
+    const usersMonthly = this.countByMonth(data.usuariosPage.content, monthKeys, (item) => item.fechaAlta);
+    const usersCumulative = usersMonthly.reduce<number[]>((acc, value, index) => {
+      const prev = index === 0 ? 0 : acc[index - 1];
+      acc.push(prev + value);
+      return acc;
+    }, []);
+
+    const paidCount = data.pagosPage.content.filter((item) => this.isPaymentSettled(item.abonado)).length;
+    const unpaidCount = Math.max(data.pagosPage.content.length - paidCount, 0);
+
+    const roleMap = data.usuariosPage.content.reduce<Map<string, number>>((acc, user) => {
+      const role = user.tipousuario?.descripcion?.trim() || 'Sin rol';
+      acc.set(role, (acc.get(role) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+    const roleLabels = Array.from(roleMap.keys());
+    const roleValues = Array.from(roleMap.values());
+
+    const categoryMap = data.categoriasPage.content.reduce<Map<string, number>>((acc, item) => {
+      const key = item.nombre?.trim() || 'Sin categoría';
+      const value = item.equipos > 0 ? item.equipos : 1;
+      acc.set(key, (acc.get(key) ?? 0) + value);
+      return acc;
+    }, new Map<string, number>());
+
+    const categoryPairs = Array.from(categoryMap.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6);
+    const categoryLabels = categoryPairs.map(([label]) => label);
+    const categoryValues = categoryPairs.map(([, value]) => value);
+
+    const isAdmin = this.security.isAdmin();
+    const kpiCards: DashboardKpiCard[] = [
+      { title: 'Clubes Activos', icon: 'building-fill', count: data.clubes, color: 'primary' },
+      { title: 'Equipos', icon: 'people-fill', count: data.equipos, color: 'success' },
+      { title: 'Jugadores', icon: 'person-bounding-box', count: data.jugadores, color: 'info' },
+      { title: 'Partidos', icon: 'calendar2-check-fill', count: data.partidos, color: 'warning' },
+      ...(isAdmin ? [
+        { title: 'Noticias', icon: 'newspaper', count: data.noticias, color: 'primary' },
+        { title: 'Artículos', icon: 'bag-fill', count: data.articulos, color: 'success' },
+        { title: 'Cuotas', icon: 'cash-coin', count: data.cuotas, color: 'info' },
+        { title: 'Facturas', icon: 'receipt', count: data.facturas, color: 'secondary' },
+        { title: 'Compras', icon: 'cart-check-fill', count: data.compras, color: 'danger' },
+      ] : []),
+      { title: 'Pagos', icon: 'wallet2', count: data.pagos, color: 'warning' },
+      { title: 'Comentarios', icon: 'chat-left-text-fill', count: data.comentarios + data.comentarioarts, color: 'secondary' },
+      { title: 'Puntuaciones', icon: 'star-fill', count: data.puntuaciones, color: 'danger' }
+    ];
+
     return {
-      clubes: this.countFromPage(this.clubService.getPage(0, 1)),
-      noticias: this.countFromPage(this.noticiaService.getPage(0, 1)),
-      comentarios: this.countFromPage(this.comentarioService.getPage(0, 1)),
-      puntuaciones: this.countFromPage(this.puntuacionService.getPage(0, 1)),
-      temporadas: this.countFromPage(this.temporadaService.getPage(0, 1)),
-      categorias: this.countFromPage(this.categoriaService.getPage(0, 1)),
-      equipos: this.countFromPage(this.equipoService.getPage(0, 1)),
-      ligas: this.countFromPage(this.ligaService.getPage(0, 1)),
-      partidos: this.countFromPage(this.partidoService.getPage(0, 1)),
-      jugadores: this.countFromPage(this.jugadorService.getPage(0, 1)),
-      cuotas: this.countFromPage(this.cuotaService.getPage(0, 1)),
-      pagos: this.countFromPage(this.pagoService.getPage(0, 1)),
-      articulos: this.countFromPage(this.articuloService.getPage(0, 1)),
-      tiposArticulo: this.countFromPage(this.tipoarticuloService.getPage(0, 1)),
-      compras: this.countFromPage(this.compraService.getPage(0, 1)),
-      facturas: this.countFromPage(this.facturaService.getPage(0, 1)),
-      carritos: this.countFromPage(this.carritoService.getPage(0, 1)),
-      comentariosArt: this.countFromPage(this.comentarioartService.getPage(0, 1)),
-      usuarios: this.countFromPage(this.usuarioService.getPage(0, 1)),
-      tiposUsuario: this.tipousuarioService.getAll().pipe(
-        map((items) => items.length),
-        catchError(() => of(0))
-      ),
-      estadosPartido: this.estadopartidoService.count(),
-      roles: this.countFromPage(this.rolusuarioService.getPage(0, 1))
+      kpiCards,
+      quickAccessCards: this.buildQuickAccessCards(),
+      barChartData: {
+        labels: ['Actividad Clubes', 'Partidos', 'Pagos'],
+        datasets: [
+          {
+            label: 'Actividad actual',
+            data: [data.clubes, data.partidos, data.pagos],
+            backgroundColor: ['#2056e0', '#e8a700', '#13b980'],
+            borderRadius: 10,
+            maxBarThickness: 54
+          }
+        ]
+      },
+      lineChartData: {
+        labels: monthLabels,
+        datasets: [
+          {
+            label: 'Evolución mensual (pagos)',
+            data: paymentsMonthly,
+            borderColor: '#13b980',
+            backgroundColor: 'rgba(19, 185, 128, 0.14)',
+            pointRadius: 3,
+            tension: 0.35,
+            fill: true
+          },
+          {
+            label: 'Crecimiento usuarios',
+            data: usersCumulative,
+            borderColor: '#2056e0',
+            backgroundColor: 'rgba(32, 86, 224, 0.08)',
+            pointRadius: 3,
+            tension: 0.32,
+            fill: false
+          },
+          {
+            label: 'Estadísticas actividad (partidos)',
+            data: matchesMonthly,
+            borderColor: '#0ca6b8',
+            backgroundColor: 'rgba(12, 166, 184, 0.08)',
+            pointRadius: 3,
+            tension: 0.3,
+            fill: false
+          }
+        ]
+      },
+      rolesDoughnutChartData: {
+        labels: roleLabels,
+        datasets: [
+          {
+            data: roleValues,
+            backgroundColor: ['#2056e0', '#13b980', '#0ca6b8', '#e8a700', '#dc4f59']
+          }
+        ]
+      },
+      paymentStatusDoughnutChartData: {
+        labels: ['Pagado', 'Pendiente'],
+        datasets: [
+          {
+            data: [paidCount, unpaidCount],
+            backgroundColor: ['#13b980', '#dc4f59']
+          }
+        ]
+      },
+      sportCategoriesDoughnutChartData: {
+        labels: categoryLabels,
+        datasets: [
+          {
+            data: categoryValues,
+            backgroundColor: ['#2056e0', '#0ca6b8', '#13b980', '#e8a700', '#6d76f6', '#f1765b']
+          }
+        ]
+      }
     };
   }
 
-  loadCounts() {
-    forkJoin(this.buildCountRequests()).subscribe({
-      next: (counts: Record<string, number>) => {
-        const countMap: Record<string, number> = {
-          'Clubes': counts['clubes'],
-          'Noticias': counts['noticias'],
-          'Comentarios': counts['comentarios'],
-          'Puntuaciones': counts['puntuaciones'],
-          'Temporadas': counts['temporadas'],
-          'Categorías': counts['categorias'],
-          'Equipos': counts['equipos'],
-          'Ligas': counts['ligas'],
-          'Partidos': counts['partidos'],
-          'Jugadores': counts['jugadores'],
-          'Cuotas': counts['cuotas'],
-          'Pagos': counts['pagos'],
-          'Artículos': counts['articulos'],
-          'Tipos de Artículo': counts['tiposArticulo'],
-          'Compras': counts['compras'],
-          'Facturas': counts['facturas'],
-          'Carritos': counts['carritos'],
-          'Comentarios Artículos': counts['comentariosArt'],
-          'Usuarios': counts['usuarios'],
-          'Tipos de Usuario': counts['tiposUsuario'],
-          'Estados de Partido': counts['estadosPartido'],
-          'Roles': counts['roles'],
-        };
-        this.cards = this.cards.map(card => ({
-          ...card,
-          count: countMap[card.title] ?? 0
-        }));
-        this.loading.set(false);
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error loading counts:', error);
-        this.loading.set(false);
+  // buildEmptyViewModel movido a DashboardService
+  /*
+  private buildEmptyViewModelOld(): DashboardViewModel {
+    return {
+      kpiCards: [
+        { title: 'Clubes Activos', icon: 'building-fill', count: 0, color: 'primary' },
+        { title: 'Equipos', icon: 'people-fill', count: 0, color: 'success' },
+        { title: 'Jugadores', icon: 'person-bounding-box', count: 0, color: 'info' },
+        { title: 'Partidos', icon: 'calendar2-check-fill', count: 0, color: 'warning' },
+        { title: 'Noticias', icon: 'newspaper', count: 0, color: 'primary' },
+        { title: 'Artículos', icon: 'bag-fill', count: 0, color: 'success' },
+        { title: 'Cuotas', icon: 'cash-coin', count: 0, color: 'info' },
+        { title: 'Pagos', icon: 'wallet2', count: 0, color: 'warning' },
+        { title: 'Facturas', icon: 'receipt', count: 0, color: 'secondary' },
+        { title: 'Compras', icon: 'cart-check-fill', count: 0, color: 'danger' },
+        { title: 'Comentarios', icon: 'chat-left-text-fill', count: 0, color: 'secondary' },
+        { title: 'Puntuaciones', icon: 'star-fill', count: 0, color: 'danger' }
+      ],
+      quickAccessCards: this.buildQuickAccessCards(),
+      barChartData: { labels: [], datasets: [] },
+      lineChartData: { labels: [], datasets: [] },
+      rolesDoughnutChartData: { labels: [], datasets: [] },
+      paymentStatusDoughnutChartData: { labels: [], datasets: [] },
+      sportCategoriesDoughnutChartData: { labels: [], datasets: [] }
+    };
+  }
+  */
+
+  private getMonthKeys(length: number): Array<{ key: string; label: string }> {
+    const now = new Date();
+    const months: Array<{ key: string; label: string }> = [];
+
+    for (let index = length - 1; index >= 0; index--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const key = `${date.getFullYear()}-${month}`;
+      const label = date.toLocaleDateString('es-ES', { month: 'short' });
+      months.push({ key, label: label.charAt(0).toUpperCase() + label.slice(1) });
+    }
+
+    return months;
+  }
+
+  private countByMonth<T>(
+    items: T[],
+    monthKeys: Array<{ key: string; label: string }>,
+    dateGetter: (item: T) => string | null | undefined
+  ): number[] {
+    const map = new Map<string, number>(monthKeys.map((month) => [month.key, 0]));
+
+    items.forEach((item) => {
+      const rawDate = dateGetter(item);
+      const parsed = this.parseApiDate(rawDate);
+      if (!parsed) {
+        return;
+      }
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const key = `${parsed.getFullYear()}-${month}`;
+      if (map.has(key)) {
+        map.set(key, (map.get(key) ?? 0) + 1);
       }
     });
+
+    return monthKeys.map((month) => map.get(month.key) ?? 0);
+  }
+
+  private parseApiDate(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+    const normalized = value.includes('T') ? value : value.replace(' ', 'T');
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private isPaymentSettled(value: number | boolean): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+    return value === 1;
+  }
+
+  private emptyPage<T>(): IPage<T> {
+    return {
+      content: [],
+      totalElements: 0,
+      totalPages: 0,
+      size: 0,
+      number: 0,
+      sort: {
+        empty: true,
+        sorted: false,
+        unsorted: true
+      },
+      first: true,
+      last: true,
+      numberOfElements: 0,
+      empty: true,
+      pageable: {
+        pageNumber: 0,
+        pageSize: 0,
+        sort: {
+          empty: true,
+          sorted: false,
+          unsorted: true
+        },
+        offset: 0,
+        paged: true,
+        unpaged: false
+      }
+    };
   }
 }

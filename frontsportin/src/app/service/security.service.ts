@@ -28,6 +28,10 @@ export class SecurityService {
     return this.session.isClubAdmin();
   }
 
+  isAdmin(): boolean {
+    return this.session.isAdmin();
+  }
+
   /**
    * Expose club id for callers.
    */
