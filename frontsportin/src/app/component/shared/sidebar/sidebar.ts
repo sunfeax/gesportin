@@ -42,8 +42,10 @@ export class SidebarComponent {
     ];
 
     if (isAdmin) {
+      items.push({ label: 'Dashboard', icon: 'speedometer2', route: '/dashboard/admin' });
       items.push({ label: 'Clubes', icon: 'building', route: '/club' });
     } else if (isClubAdmin) {
+      items.push({ label: 'Dashboard', icon: 'speedometer2', route: '/dashboard/teamadmin' });
       items.push({ label: 'Mi Club', icon: 'building', route: '/club/teamadmin' });
     }
 

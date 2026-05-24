@@ -216,6 +216,11 @@ export const publicRoutes: Routes = [
 
 const protectedRoutes: Routes = [
   { path: 'admin/datos', component: AdminDataToolsPage },
+  {
+    path: 'dashboard/admin',
+    loadComponent: () =>
+      import('./page/dashboard/admin/plist/plist').then((m) => m.DashboardAdminPlistPage),
+  },
   { path: 'usuario', component: UsuarioAdminPlistPage },
   { path: 'usuario/tipousuario/:id_tipousuario', component: UsuarioAdminPlistPage },
   { path: 'usuario/rol/:id_rol', component: UsuarioAdminPlistPage },
@@ -395,6 +400,12 @@ export const routes: Routes = [
   ...publicRoutes,
   // Home específico de cada perfil de usuario
   { path: 'admin', component: Home, canActivate: [AdminGuard] },
+  {
+    path: 'dashboard/teamadmin',
+    loadComponent: () =>
+      import('./page/dashboard/teamadmin/plist/plist').then((m) => m.DashboardTeamadminPlistPage),
+    canActivate: [ClubAdminGuard],
+  },
   { path: 'usuario/teamadmin', component: UsuarioTeamadminPlistPage, canActivate: [ClubAdminGuard] },
   { path: 'usuario/teamadmin/club/:id_club', component: UsuarioTeamadminPlistPage, canActivate: [ClubAdminGuard] },
   { path: 'club/teamadmin', component: ClubPlistTeamadminPage, canActivate: [ClubAdminGuard] },
@@ -510,6 +521,12 @@ export const routes: Routes = [
   { path: 'mi/perfil', component: UsuarioPerfilPage, canActivate: [AuthGuard] },
   // Usuario (perfil 3) routes
   { path: 'mi', component: MiHomePage, canActivate: [UsuarioGuard] },
+  {
+    path: 'mi/dashboard',
+    loadComponent: () =>
+      import('./page/dashboard/usuario/plist/plist').then((m) => m.DashboardUsuarioPlistPage),
+    canActivate: [UsuarioGuard],
+  },
   { path: 'mi/noticias', component: NoticiaUsuarioPlistPage, canActivate: [UsuarioGuard] },
   { path: 'mi/noticias/:id', component: NoticiaUsuarioViewPage, canActivate: [UsuarioGuard] },
   { path: 'mi/equipos', component: EquipoUsuarioPlistPage, canActivate: [UsuarioGuard] },
