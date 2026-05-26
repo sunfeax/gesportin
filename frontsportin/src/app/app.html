@@ -1,12 +1,18 @@
 <header class="navbar navbar-dark sticky-top flex-md-nowrap p-0 shadow app-header" style="background-color: #1a1a1a;">
-  <button class="navbar-toggler d-md-none collapsed ms-2" type="button" data-bs-toggle="collapse"
-    data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
+  <button
+    class="navbar-toggler d-md-none collapsed ms-2"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#sidebarMenu"
+    aria-controls="sidebarMenu"
+    aria-expanded="false"
+    aria-label="Toggle navigation"
+  >
     <span class="navbar-toggler-icon"></span>
   </button>
 
   <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3 fs-6 d-flex align-items-center" href="/">
-    <img src="/logowhite.png" alt="Gesportín"
-      style="height: 35px; margin-right: 10px; filter: brightness(0) invert(1);">
+    <img src="/logowhite.png" alt="Gesportín" style="height: 35px; margin-right: 10px; filter: brightness(0) invert(1);">
     Gesportín
   </a>
   <app-menu></app-menu>
@@ -15,15 +21,14 @@
 <div class="container-fluid">
   <div class="row">
     @if (isAdmin()) {
-    <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-      <div class="position-sticky pt-3">
-        <app-sidebar></app-sidebar>
-      </div>
-    </nav>
+      <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+        <div class="position-sticky pt-3">
+          <app-sidebar></app-sidebar>
+        </div>
+      </nav>
     }
 
-    <main
-      [class]="isAdmin() ? 'col-md-9 ms-sm-auto col-lg-10 px-3 px-md-4 py-3 main-content' : 'col-12 px-3 px-md-4 py-3 main-content'">
+    <main [class]="isAdmin() ? 'col-md-9 ms-sm-auto col-lg-10 px-3 px-md-4 py-3 main-content' : 'col-12 px-3 px-md-4 py-3 main-content'">
       <router-outlet></router-outlet>
 
       <div class="mt-4 text-muted text-center border-top pt-3">
@@ -33,11 +38,3 @@
     </main>
   </div>
 </div>
-
-@if (dashboardFabRoute(); as route) {
-<a class="floating-dashboard-btn" [attr.href]="route" (click)="navigateToDashboard($event, route)"
-  aria-label="Volver al dashboard">
-  <i class="bi bi-speedometer2" aria-hidden="true"></i>
-  <span>Dashboard</span>
-</a>
-}
