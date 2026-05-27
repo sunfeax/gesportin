@@ -1,32 +1,55 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { ClubService } from '../club';
-import { ComentarioService } from '../comentario';
-import { CategoriaService } from '../categoria';
-import { EquipoService } from '../equipo';
-import { LigaService } from '../liga';
-import { PartidoService } from '../partido';
-import { JugadorService } from '../jugador-service';
-import { PagoService } from '../pago';
-import { UsuarioService } from '../usuarioService';
-import { SecurityService } from '../security.service';
-import { NoticiaService } from '../noticia';
-import { ArticuloService } from '../articulo';
-import { CuotaService } from '../cuota';
-import { FacturaService } from '../factura-service';
-import { CompraService } from '../compra';
-import { PuntuacionService } from '../puntuacion';
-import { ComentarioartService } from '../comentarioart';
-import { TemporadaService } from '../temporada';
-import { IPage } from '../../model/plist';
-import { IClub } from '../../model/club';
-import { ICategoria } from '../../model/categoria';
-import { IPago } from '../../model/pago';
-import { IPartido } from '../../model/partido';
-import { ITemporada } from '../../model/temporada';
-import { INoticia } from '../../model/noticia';
-import { IUsuario } from '../../model/usuario';
+import { serverURL } from '../environment/environment';
+import {
+  IClubResumen,
+  IDeudaMensual,
+  IDeudaPorEquipo,
+  IEquipoDetalle,
+  IEquiposPorCategoria,
+  IEstadoPagos,
+  IIngresoMensual,
+  IPartidoMensual,
+} from '../model/dashboard-stats';
+import { ClubService } from './club';
+import { ComentarioService } from './comentario';
+import { CategoriaService } from './categoria';
+import { EquipoService } from './equipo';
+import { LigaService } from './liga';
+import { PartidoService } from './partido';
+import { JugadorService } from './jugador-service';
+import { PagoService } from './pago';
+import { UsuarioService } from './usuarioService';
+import { SecurityService } from './security.service';
+import { NoticiaService } from './noticia';
+import { ArticuloService } from './articulo';
+import { CuotaService } from './cuota';
+import { FacturaService } from './factura-service';
+import { CompraService } from './compra';
+import { PuntuacionService } from './puntuacion';
+import { ComentarioartService } from './comentarioart';
+import { TemporadaService } from './temporada';
+import { IPage } from '../model/plist';
+import { IClub } from '../model/club';
+import { ICategoria } from '../model/categoria';
+import { IPago } from '../model/pago';
+import { IPartido } from '../model/partido';
+import { ITemporada } from '../model/temporada';
+import { INoticia } from '../model/noticia';
+import { IUsuario } from '../model/usuario';
+
+export interface DashboardStatsData {
+  resumen: IClubResumen;
+  estadoPagos: IEstadoPagos;
+  equiposCat: IEquiposPorCategoria[];
+  partidosMes: IPartidoMensual[];
+  ingresosMes: IIngresoMensual[];
+  deudaEquipo: IDeudaPorEquipo[];
+  deudaMes: IDeudaMensual[];
+  equiposDetalle: IEquipoDetalle[];
+}
 
 export interface DashboardRawData {
   clubes: number;
@@ -50,6 +73,7 @@ export interface DashboardRawData {
   pagosPage: IPage<IPago>;
   partidosPage: IPage<IPartido>;
   categoriasPage: IPage<ICategoria>;
+  statsData: DashboardStatsData | null;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -74,6 +98,40 @@ export class DashboardService {
   private readonly puntuacionService = inject(PuntuacionService);
   private readonly comentarioartService = inject(ComentarioartService);
   private readonly temporadaService = inject(TemporadaService);
+  private readonly oHttp = inject(HttpClient);
+  private readonly statsBaseUrl = `${serverURL}/api/stats/club`;
+
+  obtenerResumen(idClub: number, idTemporada: number): Observable<IClubResumen> {
+    return this.oHttp.get<IClubResumen>(`${this.statsBaseUrl}/${idClub}/resumen?temporada=${idTemporada}`);
+  }
+
+  obtenerEstadoPagos(idClub: number, idTemporada: number): Observable<IEstadoPagos> {
+    return this.oHttp.get<IEstadoPagos>(`${this.statsBaseUrl}/${idClub}/pagos-estado?temporada=${idTemporada}`);
+  }
+
+  obtenerEquiposPorCategoria(idClub: number, idTemporada: number): Observable<IEquiposPorCategoria[]> {
+    return this.oHttp.get<IEquiposPorCategoria[]>(`${this.statsBaseUrl}/${idClub}/equipos-por-categoria?temporada=${idTemporada}`);
+  }
+
+  obtenerPartidosMensuales(idClub: number, idTemporada: number): Observable<IPartidoMensual[]> {
+    return this.oHttp.get<IPartidoMensual[]>(`${this.statsBaseUrl}/${idClub}/partidos-mensuales?temporada=${idTemporada}`);
+  }
+
+  obtenerIngresosMensuales(idClub: number, idTemporada: number): Observable<IIngresoMensual[]> {
+    return this.oHttp.get<IIngresoMensual[]>(`${this.statsBaseUrl}/${idClub}/ingresos-mensuales?temporada=${idTemporada}`);
+  }
+
+  obtenerDeudaPorEquipo(idClub: number, idTemporada: number): Observable<IDeudaPorEquipo[]> {
+    return this.oHttp.get<IDeudaPorEquipo[]>(`${this.statsBaseUrl}/${idClub}/deuda-por-equipo?temporada=${idTemporada}`);
+  }
+
+  obtenerDeudaMensual(idClub: number, idTemporada: number): Observable<IDeudaMensual[]> {
+    return this.oHttp.get<IDeudaMensual[]>(`${this.statsBaseUrl}/${idClub}/deuda-mensual?temporada=${idTemporada}`);
+  }
+
+  obtenerEquiposDetalle(idClub: number, idTemporada: number): Observable<IEquipoDetalle[]> {
+    return this.oHttp.get<IEquipoDetalle[]>(`${this.statsBaseUrl}/${idClub}/equipos-detalle?temporada=${idTemporada}`);
+  }
 
   private emptyPage<T>(): IPage<T> {
     return {
@@ -185,6 +243,33 @@ export class DashboardService {
       .getPage(0, DashboardService.DASHBOARD_PAGE_SIZE, 'nombre', 'asc', '', categoriasPageRequestTemporada)
       .pipe(catchError(() => of(this.emptyPage<ICategoria>())));
 
+    const statsData$: Observable<DashboardStatsData | null> = clubId > 0
+      ? forkJoin({
+          resumen: this.obtenerResumen(clubId, selectedTemporadaId).pipe(catchError(() => of(null))),
+          estadoPagos: this.obtenerEstadoPagos(clubId, selectedTemporadaId).pipe(catchError(() => of(null))),
+          equiposCat: this.obtenerEquiposPorCategoria(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          partidosMes: this.obtenerPartidosMensuales(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          ingresosMes: this.obtenerIngresosMensuales(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          deudaEquipo: this.obtenerDeudaPorEquipo(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          deudaMes: this.obtenerDeudaMensual(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          equiposDetalle: this.obtenerEquiposDetalle(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+        }).pipe(
+          map((s) => s.resumen
+            ? {
+                resumen: s.resumen,
+                estadoPagos: s.estadoPagos ?? { pagados: 0, pendientes: 0 },
+                equiposCat: s.equiposCat,
+                partidosMes: s.partidosMes,
+                ingresosMes: s.ingresosMes,
+                deudaEquipo: s.deudaEquipo,
+                deudaMes: s.deudaMes,
+                equiposDetalle: s.equiposDetalle,
+              }
+            : null),
+          catchError(() => of(null))
+        )
+      : of(null);
+
     return forkJoin({
       clubes: clubs$,
       equipos: teams$,
@@ -206,7 +291,8 @@ export class DashboardService {
       usuariosPage: usuariosPage$,
       pagosPage: pagosPage$,
       partidosPage: partidosPage$,
-      categoriasPage: categoriasPage$
+      categoriasPage: categoriasPage$,
+      statsData: statsData$,
     });
   }
 }

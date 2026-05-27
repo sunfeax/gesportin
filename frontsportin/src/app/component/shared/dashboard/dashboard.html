@@ -1,5 +1,16 @@
 <div class="dashboard-wrapper" [class.loading]="loading()" [class.mode-teamadmin]="isClubAdmin"
   [class.mode-admin]="!isClubAdmin">
+
+  @if (loading()) {
+  <div class="dashboard-overlay" aria-hidden="true">
+    <div class="dashboard-spinner">
+      <svg viewBox="0 0 50 50" class="spinner-svg">
+        <circle cx="25" cy="25" r="20" fill="none" stroke-width="4" class="spinner-track" />
+        <circle cx="25" cy="25" r="20" fill="none" stroke-width="4" class="spinner-arc" />
+      </svg>
+    </div>
+  </div>
+  }
   @if (vm$ | async; as vm) {
   <header class="dashboard-header">
     <div class="header-copy">
@@ -72,7 +83,10 @@
       <span aria-hidden="true" style="flex-basis:100%;height:0"></span>
 
       <div class="filter-actions">
-        <button type="button" class="filter-button" (click)="clearDateFilters()">Limpiar filtros</button>
+        <button type="button" class="filter-button filter-button-outline" (click)="clearDateFilters()">Limpiar filtros</button>
+        <button type="button" class="filter-button" (click)="buscar()">
+          <i class="bi bi-search" aria-hidden="true"></i> Buscar
+        </button>
       </div>
     </div>
   </section>
@@ -308,7 +322,7 @@
       </article>
 
       @if (vm.showPendingDebtByTeamChart) {
-      <article class="chart-card chart-card-full">
+      <article class="chart-card chart-card-wide">
         <header>
           <h2>Deudas Pendientes por Equipo</h2>
           <i class="bi bi-exclamation-diamond"></i>
@@ -338,6 +352,26 @@
           }
         </div>
         }
+      </article>
+      }
+
+      @if (vm.showStatsCharts) {
+      <article class="chart-card chart-card-wide">
+        <header>
+          <h2>Ingresos vs Deuda</h2>
+          <i class="bi bi-graph-up-arrow"></i>
+        </header>
+        <div class="chart-container chart-container-large">
+          @if (hasBarData(vm.ingresosDeudaChartData)) {
+          <canvas baseChart [data]="vm.ingresosDeudaChartData" [options]="barChartOptions" [type]="'bar'">
+          </canvas>
+          } @else {
+          <div class="chart-empty">
+            <i class="bi bi-graph-up-arrow"></i>
+            <span>Sin ingresos ni deudas para este resumen</span>
+          </div>
+          }
+        </div>
       </article>
       }
 
@@ -398,7 +432,69 @@
       </article>
       }
     </div>
+
+    @if (vm.showStatsCharts) {
+    <div class="dashboard-grid" style="margin-top:.75rem">
+
+      <article class="chart-card chart-card-full">
+        <header>
+          <h2>Deuda pendiente por equipo</h2>
+          <i class="bi bi-exclamation-diamond-fill"></i>
+        </header>
+        <div class="chart-container chart-container-large">
+          @if (hasBarData(vm.deudaEquipoBarChartData)) {
+          <canvas baseChart [data]="vm.deudaEquipoBarChartData" [options]="horizontalBarChartOptions" [type]="'bar'">
+          </canvas>
+          } @else {
+          <div class="chart-empty">
+            <i class="bi bi-exclamation-diamond"></i>
+            <span>Sin deudas pendientes por equipo</span>
+          </div>
+          }
+        </div>
+      </article>
+
+    </div>
+    }
+
   </section>
+
+  @if (vm.showStatsCharts && vm.equiposDetalleRows.length > 0) {
+  <section class="detalle-section" aria-label="Tabla de detalle de equipos">
+    <header class="detail-header">
+      <h2>Detalle de equipos</h2>
+      <p>Rendimiento por equipo en la temporada seleccionada</p>
+    </header>
+    <div class="detalle-table-wrapper">
+      <table class="detalle-table">
+        <thead>
+          <tr>
+            <th>Equipo</th>
+            <th>Categoría</th>
+            <th class="num">Jugadores</th>
+            <th class="num">Partidos</th>
+            <th class="num">Victorias</th>
+            <th class="num">% Victorias</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of vm.equiposDetalleRows; track row.equipo) {
+          <tr>
+            <td class="equipo-name">{{ row.equipo }}</td>
+            <td>{{ row.categoria }}</td>
+            <td class="num">{{ row.numJugadores }}</td>
+            <td class="num">{{ row.partidosJugados }}</td>
+            <td class="num">{{ row.victorias }}</td>
+            <td class="num pct" [class.pct-high]="(row.victorias / (row.partidosJugados || 1)) >= 0.5">
+              {{ row.partidosJugados > 0 ? ((row.victorias / row.partidosJugados) * 100 | number:'1.0-0') + '%' : '—' }}
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  }
 
   @if (vm.showQuickAccess) {
   <section class="quick-access-section" aria-label="Accesos rápidos">

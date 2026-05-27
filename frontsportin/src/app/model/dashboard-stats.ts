@@ -27,7 +27,8 @@ export interface IPartidoMensual {
 }
 
 export interface IIngresoMensual {
-  mes: string;
+  mes?: string;
+  fecha?: string;
   total: number;
 }
 
@@ -37,7 +38,8 @@ export interface IDeudaPorEquipo {
 }
 
 export interface IDeudaMensual {
-  mes: string;
+  mes?: string;
+  fecha?: string;
   total: number;
 }
 

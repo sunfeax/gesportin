@@ -5,7 +5,8 @@ import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 
 import { SecurityService } from '../../../service/security.service';
-import { DashboardService, DashboardRawData } from '../../../service/dashboard/dashboard.service';
+import { DashboardService, DashboardRawData, DashboardStatsData } from '../../../service/dashboard.service';
+import { IDeudaMensual, IEquipoDetalle, IIngresoMensual } from '../../../model/dashboard-stats';
 import { Observable, Subject, merge, of, timer } from 'rxjs';
 import { catchError, map, shareReplay, switchMap, tap } from 'rxjs/operators';
 
@@ -106,6 +107,10 @@ interface DashboardViewModel {
   clubCompositionDoughnutChartData: ChartData<'doughnut'>;
   radarPerformanceChartData: ChartData<'radar'>;
   polarPriorityChartData: ChartData<'polarArea'>;
+  showStatsCharts: boolean;
+  ingresosDeudaChartData: ChartData<'bar'>;
+  deudaEquipoBarChartData: ChartData<'bar'>;
+  equiposDetalleRows: IEquipoDetalle[];
 }
 
 @Component({
@@ -270,6 +275,21 @@ export class DashboardComponent implements OnInit {
     }
   };
 
+  public readonly horizontalBarChartOptions: ChartConfiguration<'bar'>['options'] = {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y' as const,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        bodyFont: { size: 13, weight: 'bold' }
+      }
+    },
+    scales: {
+      x: { beginAtZero: true, ticks: { precision: 0 } }
+    }
+  };
+
   constructor() {
     if (this.isClubAdmin && this.lockedClubId > 0) {
       this.selectedClubId.set(this.lockedClubId);
@@ -305,25 +325,21 @@ export class DashboardComponent implements OnInit {
   onFromDateChange(value: string): void {
     this.fromDate.set(value);
     this.selectedPeriod.set('custom');
-    this.filterRefresh$.next();
   }
 
   onToDateChange(value: string): void {
     this.toDate.set(value);
     this.selectedPeriod.set('custom');
-    this.filterRefresh$.next();
   }
 
   onClubChange(value: string): void {
     const clubId = Number(value) || 0;
     this.selectedClubId.set(clubId);
     this.selectedTemporadaId.set(0);
-    this.filterRefresh$.next();
   }
 
   onTemporadaChange(value: string): void {
     this.selectedTemporadaId.set(Number(value) || 0);
-    this.filterRefresh$.next();
   }
 
   onPeriodChange(value: string): void {
@@ -333,7 +349,6 @@ export class DashboardComponent implements OnInit {
     if (period === 'all') {
       this.fromDate.set('');
       this.toDate.set('');
-      this.filterRefresh$.next();
       return;
     }
 
@@ -344,9 +359,10 @@ export class DashboardComponent implements OnInit {
 
     if (period === 'last30') {
       this.applyRelativeRange(30);
-      return;
     }
+  }
 
+  buscar(): void {
     this.filterRefresh$.next();
   }
 
@@ -365,7 +381,6 @@ export class DashboardComponent implements OnInit {
     start.setDate(end.getDate() - (days - 1));
     this.fromDate.set(this.formatDateInput(start));
     this.toDate.set(this.formatDateInput(end));
-    this.filterRefresh$.next();
   }
 
   private buildQuickAccessCards(): QuickAccessCard[] {
@@ -588,6 +603,7 @@ export class DashboardComponent implements OnInit {
     toDate = '',
   ): DashboardViewModel {
     const filteredData = this.filterTemporalData(data, selectedClubId, selectedTemporadaId, fromDate, toDate);
+    const statsData: DashboardStatsData | null = data.statsData ?? null;
     const monthKeys = this.getMonthKeys(6);
     const monthLabels = monthKeys.map((item) => item.label);
     const isAdmin = this.security.isAdmin();
@@ -721,7 +737,11 @@ export class DashboardComponent implements OnInit {
       ] : []),
       { title: 'Pagos', icon: 'wallet2', count: (selectedClubId > 0 || selectedTemporadaId > 0 || fromDate || toDate) ? filteredPaymentTotal : data.pagos, color: 'warning' },
         { title: 'Comentarios', icon: 'chat-left-text-fill', count: filteredData.comentarios + filteredData.comentarioarts, color: 'secondary' },
-      { title: 'Puntuaciones', icon: 'star-fill', count: data.puntuaciones, color: 'danger' }
+      { title: 'Puntuaciones', icon: 'star-fill', count: data.puntuaciones, color: 'danger' },
+      ...((isAdmin || isClubAdmin) && data.statsData ? [
+        { title: 'Ingresos recibidos', icon: 'cash-stack', count: data.statsData.resumen.totalPagosRecibidos, color: 'success' },
+        { title: 'Deuda total', icon: 'exclamation-triangle-fill', count: data.statsData.resumen.totalDeudas, color: 'danger' }
+      ] : [])
     ];
 
     const lineDatasets: ChartData<'line'>['datasets'] = isClubAdmin
@@ -798,12 +818,21 @@ export class DashboardComponent implements OnInit {
       ]
       : [];
 
+    const statsPagadosCount = statsData?.estadoPagos.pagados ?? paidCount;
+    const statsTotalPagos = statsData
+      ? statsData.estadoPagos.pagados + statsData.estadoPagos.pendientes
+      : filteredData.pagosPage.content.length;
+    const statsSettledRate = this.toPercentage(statsPagadosCount, statsTotalPagos);
+    const statsAvgPlayersPerTeam = statsData && statsData.resumen.totalEquipos > 0
+      ? Math.round((statsData.resumen.totalJugadores / statsData.resumen.totalEquipos) * 10) / 10
+      : avgPlayersPerTeam;
+
     const detailCards: DashboardDetailCard[] = isAdmin
       ? [
         {
           title: 'Tasa de cobro',
-          value: `${settledRate.toFixed(1)}%`,
-          helper: `${paidCount} pagados de ${data.pagosPage.content.length} pagos`,
+          value: `${statsSettledRate.toFixed(1)}%`,
+          helper: `${statsPagadosCount} pagados de ${statsTotalPagos} pagos`,
           icon: 'cash-coin',
           color: 'success'
         },
@@ -817,7 +846,7 @@ export class DashboardComponent implements OnInit {
         {
           title: 'Partidos con resultado',
           value: `${matchCompletionRate.toFixed(1)}%`,
-          helper: `${matchesWithResult} de ${data.partidosPage.content.length} partidos registrados`,
+          helper: `${matchesWithResult} de ${filteredData.partidosPage.content.length} partidos registrados`,
           icon: 'clipboard2-check',
           color: 'info'
         },
@@ -830,7 +859,7 @@ export class DashboardComponent implements OnInit {
         },
         {
           title: 'Jugadores por equipo',
-          value: `${avgPlayersPerTeam.toFixed(1)}`,
+          value: `${statsAvgPlayersPerTeam.toFixed(1)}`,
           helper: 'Media actual para balance deportivo',
           icon: 'people',
           color: 'secondary'
@@ -961,6 +990,67 @@ export class DashboardComponent implements OnInit {
     const safePolarValues = this.hasPositiveNumericData(polarValues)
       ? this.sanitizeNumericArray(polarValues)
       : this.sanitizeNumericArray(fallbackPolarValues);
+
+    const showStatsCharts = !!(statsData && (isAdmin || isClubAdmin));
+
+    const monthlyMoneyRows = this.buildMonthlyMoneyRows(
+      statsData?.ingresosMes ?? [],
+      statsData?.deudaMes ?? []
+    );
+    const hasMonthlyMoneyData = monthlyMoneyRows.some((row) => row.ingresos > 0 || row.deuda > 0);
+
+    const ingresosDeudaChartData: ChartData<'bar'> = hasMonthlyMoneyData
+      ? {
+          labels: monthlyMoneyRows.map((row) => row.label),
+          datasets: [
+            {
+              label: 'Ingresos',
+              data: monthlyMoneyRows.map((row) => row.ingresos),
+              backgroundColor: 'rgba(19,185,128,0.8)',
+              borderRadius: 6,
+              maxBarThickness: 36
+            },
+            {
+              label: 'Deuda',
+              data: monthlyMoneyRows.map((row) => row.deuda),
+              backgroundColor: 'rgba(220,79,89,0.75)',
+              borderRadius: 6,
+              maxBarThickness: 36
+            }
+          ]
+        }
+      : {
+          labels: ['Ingresos recibidos', 'Deuda pendiente'],
+          datasets: [
+            {
+              label: 'Importe (€)',
+              data: [
+                statsData?.resumen?.totalPagosRecibidos ?? 0,
+                statsData?.resumen?.totalDeudas ?? 0
+              ],
+              backgroundColor: ['rgba(19,185,128,0.8)', 'rgba(220,79,89,0.75)'],
+              borderRadius: 8,
+              maxBarThickness: 80
+            }
+          ]
+        };
+
+    const deudaEquipoBarChartData: ChartData<'bar'> = {
+      labels: statsData?.deudaEquipo.map((d) => d.equipo) ?? [],
+      datasets: [
+        {
+          label: 'Deuda (€)',
+          data: statsData?.deudaEquipo.map((d) => d.deuda) ?? [],
+          backgroundColor: statsData?.deudaEquipo.map((_, i) =>
+            ['#dc4f59','#e87b86','#e8a700','#f6c34b','#2056e0','#6d76f6','#0ca6b8','#13b980'][i % 8]
+          ) ?? [],
+          borderRadius: 4,
+          maxBarThickness: 28
+        }
+      ]
+    };
+
+    const equiposDetalleRows: IEquipoDetalle[] = statsData?.equiposDetalle ?? [];
 
     const radarPerformanceChartData: ChartData<'radar'> = {
       labels: radarLabels,
@@ -1111,7 +1201,12 @@ export class DashboardComponent implements OnInit {
             backgroundColor: ['#2056e0', '#13b980', '#0ca6b8', '#e8a700', '#dc4f59', '#6d76f6']
           }
         ]
-      }
+      },
+      showStatsCharts,
+
+      ingresosDeudaChartData,
+      deudaEquipoBarChartData,
+      equiposDetalleRows
     };
   }
 
@@ -1149,15 +1244,6 @@ export class DashboardComponent implements OnInit {
     recentUsers: number
   ): DashboardActionItem[] {
     const items: DashboardActionItem[] = [
-      {
-        title: 'Resumen del dashboard',
-        description: 'Tarjeta de contexto para revisar el estado actual del panel.',
-        value: overduePayments + matchesWithoutResult + pendingPayments + recentUsers,
-        icon: 'speedometer2',
-        route: '/admin/dashboard',
-        cta: 'Ver panel',
-        severity: 'low'
-      },
       {
         title: 'Pagos vencidos por revisar',
         description: 'Cuotas con fecha vencida y sin abono confirmado.',
@@ -1344,6 +1430,38 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private buildMonthlyMoneyRows(
+    ingresosMes: IIngresoMensual[],
+    deudaMes: IDeudaMensual[]
+  ): Array<{ label: string; ingresos: number; deuda: number }> {
+    const ingresosMap = this.toMoneyMonthMap(ingresosMes);
+    const deudaMap = this.toMoneyMonthMap(deudaMes);
+    const monthKeys = Array.from(new Set([...ingresosMap.keys(), ...deudaMap.keys()])).sort();
+
+    return monthKeys.map((monthKey) => ({
+      label: monthKey,
+      ingresos: ingresosMap.get(monthKey) ?? 0,
+      deuda: deudaMap.get(monthKey) ?? 0
+    }));
+  }
+
+  private toMoneyMonthMap(items: Array<IIngresoMensual | IDeudaMensual>): Map<string, number> {
+    return items.reduce<Map<string, number>>((acc, item) => {
+      const monthKey = (item.mes ?? item.fecha ?? '').trim();
+      if (!monthKey) {
+        return acc;
+      }
+
+      acc.set(monthKey, (acc.get(monthKey) ?? 0) + this.toChartNumber(item.total));
+      return acc;
+    }, new Map<string, number>());
+  }
+
+  private toChartNumber(value: unknown): number {
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) ? numericValue : 0;
+  }
+
   private buildEmptyViewModel(): DashboardViewModel {
     return {
       title: this.security.isClubAdmin() ? 'Dashboard de Club' : (this.security.isUser() ? 'Mi Dashboard' : 'Dashboard de Administración'),
@@ -1384,7 +1502,11 @@ export class DashboardComponent implements OnInit {
       sportCategoriesDoughnutChartData: { labels: [], datasets: [] },
       clubCompositionDoughnutChartData: { labels: [], datasets: [] },
       radarPerformanceChartData: { labels: [], datasets: [{ data: [] }] },
-      polarPriorityChartData: { labels: [], datasets: [{ data: [] }] }
+      polarPriorityChartData: { labels: [], datasets: [{ data: [] }] },
+      showStatsCharts: false,
+      ingresosDeudaChartData: { labels: [], datasets: [] },
+      deudaEquipoBarChartData: { labels: [], datasets: [] },
+      equiposDetalleRows: []
     };
   }
 

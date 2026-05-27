@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DeudaMensualDTO {
 
-    private String fecha;
+    private String mes;
     private BigDecimal total;
 }
