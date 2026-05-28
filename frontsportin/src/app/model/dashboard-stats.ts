@@ -21,7 +21,8 @@ export interface IEquiposPorCategoria {
 }
 
 export interface IPartidoMensual {
-  mes: string;
+  mes?: string;
+  fecha?: string;
   jugados: number;
   victorias: number;
 }

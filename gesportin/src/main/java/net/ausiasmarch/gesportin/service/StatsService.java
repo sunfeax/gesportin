@@ -42,6 +42,9 @@ public class StatsService {
         if (oSessionService.isEquipoAdmin()) {
             oSessionService.checkSameClub(idClub);
         }
+        if (idTemporada == null || idTemporada <= 0) {
+            return;
+        }
         TemporadaEntity temporada = oTemporadaRepository.findById(idTemporada)
                 .orElseThrow(() -> new ResourceNotFoundException("Temporada no encontrada con id: " + idTemporada));
         if (!temporada.getClub().getId().equals(idClub)) {
@@ -67,17 +70,23 @@ public class StatsService {
                 SELECT COUNT(j.id) FROM jugador j
                 JOIN equipo e ON j.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long totalEquipos = toLong(oEntityManager.createNativeQuery("""
                 SELECT COUNT(e.id) FROM equipo e
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long totalPartidos = toLong(oEntityManager.createNativeQuery("""
@@ -85,9 +94,12 @@ public class StatsService {
                 JOIN liga l ON p.id_liga = l.id
                 JOIN equipo e ON l.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long totalNoticias = toLong(oEntityManager.createNativeQuery("""
@@ -102,9 +114,12 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         BigDecimal totalPagosRecibidos = toBigDecimal(oEntityManager.createNativeQuery("""
@@ -112,9 +127,13 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 1
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 1
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         BigDecimal totalDeudas = toBigDecimal(oEntityManager.createNativeQuery("""
@@ -122,9 +141,13 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 0
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 0
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long partidosJugados = toLong(oEntityManager.createNativeQuery("""
@@ -132,10 +155,13 @@ public class StatsService {
                 JOIN liga l ON p.id_liga = l.id
                 JOIN equipo e ON l.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                   AND p.id_estadopartido IN (3, 4, 5)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long partidosPendientes = toLong(oEntityManager.createNativeQuery("""
@@ -143,10 +169,13 @@ public class StatsService {
                 JOIN liga l ON p.id_liga = l.id
                 JOIN equipo e ON l.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                   AND p.id_estadopartido IN (1, 2)
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         return new ClubResumenDTO(
@@ -162,9 +191,13 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 1
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 1
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         Long pendientes = toLong(oEntityManager.createNativeQuery("""
@@ -172,9 +205,13 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 0
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 0
                 """)
-                .setParameter("idTemporada", idTemporada)
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada)
                 .getSingleResult());
 
         return new EstadoPagosDTO(pagados, pendientes);
@@ -188,11 +225,14 @@ public class StatsService {
                 SELECT c.nombre AS categoria, COUNT(e.id) AS totalEquipos
                 FROM equipo e
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 GROUP BY c.id, c.nombre
                 ORDER BY c.nombre
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<EquiposPorCategoriaDTO> resultado = new ArrayList<>();
@@ -208,17 +248,20 @@ public class StatsService {
 
         Query query = oEntityManager.createNativeQuery("""
                 SELECT DATE_FORMAT(p.fecha, '%Y-%m') AS mes,
-                       SUM(CASE WHEN p.id_estadopartido IN (3, 4, 5) THEN 1 ELSE 0 END) AS jugados,
+                       COUNT(p.id) AS jugados,
                        SUM(CASE WHEN p.id_estadopartido = 3 THEN 1 ELSE 0 END) AS victorias
                 FROM partido p
                 JOIN liga l ON p.id_liga = l.id
                 JOIN equipo e ON l.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 GROUP BY DATE_FORMAT(p.fecha, '%Y-%m')
                 ORDER BY mes
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<PartidoMensualDTO> resultado = new ArrayList<>();
@@ -239,11 +282,15 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 1
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 1
                 GROUP BY DATE_FORMAT(p.fecha, '%Y-%m')
                 ORDER BY mes
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<IngresoMensualDTO> resultado = new ArrayList<>();
@@ -264,11 +311,15 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 0
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 0
                 GROUP BY e.id, e.nombre
                 ORDER BY deuda DESC
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<DeudaPorEquipoDTO> resultado = new ArrayList<>();
@@ -289,11 +340,15 @@ public class StatsService {
                 JOIN cuota cu ON p.id_cuota = cu.id
                 JOIN equipo e ON cu.id_equipo = e.id
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada AND p.abonado = 0
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
+                  AND p.abonado = 0
                 GROUP BY DATE_FORMAT(p.fecha, '%Y-%m')
                 ORDER BY mes
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<DeudaMensualDTO> resultado = new ArrayList<>();
@@ -321,10 +376,13 @@ public class StatsService {
                             AND pa.id_estadopartido = 3) AS victorias
                 FROM equipo e
                 JOIN categoria c ON e.id_categoria = c.id
-                WHERE c.id_temporada = :idTemporada
+                JOIN temporada t ON c.id_temporada = t.id
+                WHERE t.id_club = :idClub
+                  AND (:idTemporada <= 0 OR c.id_temporada = :idTemporada)
                 ORDER BY e.nombre
                 """)
-                .setParameter("idTemporada", idTemporada);
+                .setParameter("idClub", idClub)
+                .setParameter("idTemporada", idTemporada == null ? 0L : idTemporada);
 
         List<Object[]> filas = query.getResultList();
         List<EquipoDetalleDTO> resultado = new ArrayList<>();

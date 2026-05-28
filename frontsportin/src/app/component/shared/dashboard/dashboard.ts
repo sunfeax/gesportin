@@ -6,9 +6,9 @@ import { ChartConfiguration, ChartData, ChartOptions } from 'chart.js';
 
 import { SecurityService } from '../../../service/security.service';
 import { DashboardService, DashboardRawData, DashboardStatsData } from '../../../service/dashboard.service';
-import { IDeudaMensual, IEquipoDetalle, IIngresoMensual } from '../../../model/dashboard-stats';
-import { Observable, Subject, merge, of, timer } from 'rxjs';
-import { catchError, map, shareReplay, switchMap, tap } from 'rxjs/operators';
+import { IDeudaMensual, IEquipoDetalle, IIngresoMensual, IPartidoMensual } from '../../../model/dashboard-stats';
+import { Observable, Subject, of } from 'rxjs';
+import { catchError, map, shareReplay, startWith, switchMap, tap } from 'rxjs/operators';
 
 interface DashboardKpiCard {
   title: string;
@@ -122,7 +122,6 @@ interface DashboardViewModel {
 })
 export class DashboardComponent implements OnInit {
 
-  private readonly refreshIntervalMs = 60_000;
   private readonly filterRefresh$ = new Subject<void>();
 
   loading = signal(true);
@@ -295,7 +294,8 @@ export class DashboardComponent implements OnInit {
       this.selectedClubId.set(this.lockedClubId);
     }
 
-    this.vm$ = merge(timer(0, this.refreshIntervalMs), this.filterRefresh$).pipe(
+    this.vm$ = this.filterRefresh$.pipe(
+      startWith(undefined),
       tap(() => this.loading.set(true)),
       switchMap(() => this.dashboardService.fetchDashboardData(this.selectedClubId(), this.selectedTemporadaId())),
       map((raw) => this.buildViewModel(
@@ -627,8 +627,12 @@ export class DashboardComponent implements OnInit {
     const temporadaLabel = this.resolveOptionLabel(temporadaOptions, selectedTemporadaId);
     const periodLabel = this.resolvePeriodLabel(selectedPeriod);
 
+    const hasDateFilter = fromDate.length > 0 || toDate.length > 0;
+    const canUseStatsScope = !!statsData && !hasDateFilter;
     const paymentsMonthly = this.countByMonth(filteredData.pagosPage.content, monthKeys, (item) => item.fecha);
-    const matchesMonthly = this.countByMonth(filteredData.partidosPage.content, monthKeys, (item) => item.fecha ?? null);
+    const matchesMonthly = canUseStatsScope
+      ? this.countStatsPartidosByMonth(statsData!.partidosMes, monthKeys)
+      : this.countByMonth(filteredData.partidosPage.content, monthKeys, (item) => item.fecha ?? null);
     const usersMonthly = this.countByMonth(filteredData.usuariosPage.content, monthKeys, (item) => item.fechaAlta);
     const usersCumulative = usersMonthly.reduce<number[]>((acc, value, index) => {
       const prev = index === 0 ? 0 : acc[index - 1];
@@ -676,12 +680,19 @@ export class DashboardComponent implements OnInit {
       return diffMs >= 0 && diffMs <= sevenDaysMs;
     }).length;
 
-    const filteredTeamTotal = filteredData.categoriasPage.content.reduce<number>((acc, item) => acc + (item.equipos || 0), 0);
-    const filteredPlayerTotal = filteredData.usuariosPage.content.filter((item) => item.tipousuario?.id === 3).length;
+    const filteredTeamTotal = canUseStatsScope
+      ? statsData!.resumen.totalEquipos
+      : filteredData.categoriasPage.content.reduce<number>((acc, item) => acc + (item.equipos || 0), 0);
+    const filteredPlayerTotal = canUseStatsScope
+      ? statsData!.resumen.totalJugadores
+      : filteredData.usuariosPage.content.filter((item) => item.tipousuario?.id === 3).length;
     const filteredNewsTotal = filteredData.noticiasPage.content.length;
-    const filteredMatchTotal = filteredData.partidosPage.content.length;
-    const filteredPaymentTotal = filteredData.pagosPage.content.length;
+    const filteredMatchTotal = canUseStatsScope ? statsData!.resumen.totalPartidos : filteredData.partidosPage.content.length;
+    const filteredPaymentTotal = canUseStatsScope ? statsData!.resumen.totalPagos : filteredData.pagosPage.content.length;
     const hasActiveFilters = selectedClubId > 0 || selectedTemporadaId > 0 || selectedPeriod !== 'all' || fromDate.length > 0 || toDate.length > 0;
+    const useScopedTotals = selectedClubId > 0 || selectedTemporadaId > 0 || hasDateFilter;
+    const displayMatchTotal = useScopedTotals ? filteredMatchTotal : data.partidos;
+    const displayPaymentTotal = useScopedTotals ? filteredPaymentTotal : data.pagos;
     const scopedDataTotal = filteredData.usuariosPage.content.length
       + filteredData.pagosPage.content.length
       + filteredData.partidosPage.content.length
@@ -727,7 +738,7 @@ export class DashboardComponent implements OnInit {
       { title: isClubAdmin ? 'Mi Club' : 'Clubes Activos', icon: 'building-fill', count: selectedClubId > 0 ? 1 : data.clubes, color: 'primary' },
       { title: 'Equipos', icon: 'people-fill', count: (selectedClubId > 0 || selectedTemporadaId > 0) ? Math.max(filteredTeamTotal, 0) : data.equipos, color: 'success' },
       { title: 'Jugadores', icon: 'person-bounding-box', count: (selectedClubId > 0 || selectedTemporadaId > 0) ? Math.max(filteredPlayerTotal, 0) : data.jugadores, color: 'info' },
-      { title: 'Partidos', icon: 'calendar2-check-fill', count: (selectedClubId > 0 || selectedTemporadaId > 0 || fromDate || toDate) ? filteredMatchTotal : data.partidos, color: 'warning' },
+      { title: 'Partidos', icon: 'calendar2-check-fill', count: displayMatchTotal, color: 'warning' },
       ...((isAdmin || isClubAdmin) ? [
         { title: 'Noticias', icon: 'newspaper', count: (selectedClubId > 0 || selectedTemporadaId > 0) ? filteredNewsTotal : data.noticias, color: 'primary' },
         { title: 'Artículos', icon: 'bag-fill', count: data.articulos, color: 'success' },
@@ -735,7 +746,7 @@ export class DashboardComponent implements OnInit {
         { title: 'Facturas', icon: 'receipt', count: data.facturas, color: 'secondary' },
         { title: 'Compras', icon: 'cart-check-fill', count: data.compras, color: 'danger' },
       ] : []),
-      { title: 'Pagos', icon: 'wallet2', count: (selectedClubId > 0 || selectedTemporadaId > 0 || fromDate || toDate) ? filteredPaymentTotal : data.pagos, color: 'warning' },
+      { title: 'Pagos', icon: 'wallet2', count: displayPaymentTotal, color: 'warning' },
         { title: 'Comentarios', icon: 'chat-left-text-fill', count: filteredData.comentarios + filteredData.comentarioarts, color: 'secondary' },
       { title: 'Puntuaciones', icon: 'star-fill', count: data.puntuaciones, color: 'danger' },
       ...((isAdmin || isClubAdmin) && data.statsData ? [
@@ -1123,8 +1134,8 @@ export class DashboardComponent implements OnInit {
           {
             label: 'Actividad actual',
             data: isClubAdmin
-              ? [filteredData.equipos, filteredData.jugadores, filteredData.partidos]
-              : (isUser ? [filteredData.equipos, filteredData.pagos, filteredData.facturas] : [filteredData.clubes, filteredData.partidos, filteredData.pagos]),
+              ? [filteredTeamTotal, filteredPlayerTotal, filteredMatchTotal]
+              : (isUser ? [filteredData.equipos, displayPaymentTotal, filteredData.facturas] : [filteredData.clubes, displayMatchTotal, displayPaymentTotal]),
             backgroundColor: ['#2056e0', '#e8a700', '#13b980'],
             borderRadius: 10,
             maxBarThickness: 54
@@ -1455,6 +1466,22 @@ export class DashboardComponent implements OnInit {
       acc.set(monthKey, (acc.get(monthKey) ?? 0) + this.toChartNumber(item.total));
       return acc;
     }, new Map<string, number>());
+  }
+
+  private countStatsPartidosByMonth(
+    items: IPartidoMensual[],
+    monthKeys: Array<{ key: string; label: string }>
+  ): number[] {
+    const map = new Map<string, number>(monthKeys.map((month) => [month.key, 0]));
+
+    items.forEach((item) => {
+      const monthKey = (item.mes ?? item.fecha ?? '').trim();
+      if (map.has(monthKey)) {
+        map.set(monthKey, (map.get(monthKey) ?? 0) + this.toChartNumber(item.jugados));
+      }
+    });
+
+    return monthKeys.map((month) => map.get(month.key) ?? 0);
   }
 
   private toChartNumber(value: unknown): number {

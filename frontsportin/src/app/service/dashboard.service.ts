@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { serverURL } from '../environment/environment';
 import {
   IClubResumen,
@@ -243,32 +243,44 @@ export class DashboardService {
       .getPage(0, DashboardService.DASHBOARD_PAGE_SIZE, 'nombre', 'asc', '', categoriasPageRequestTemporada)
       .pipe(catchError(() => of(this.emptyPage<ICategoria>())));
 
-    const statsData$: Observable<DashboardStatsData | null> = clubId > 0
-      ? forkJoin({
-          resumen: this.obtenerResumen(clubId, selectedTemporadaId).pipe(catchError(() => of(null))),
-          estadoPagos: this.obtenerEstadoPagos(clubId, selectedTemporadaId).pipe(catchError(() => of(null))),
-          equiposCat: this.obtenerEquiposPorCategoria(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-          partidosMes: this.obtenerPartidosMensuales(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-          ingresosMes: this.obtenerIngresosMensuales(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-          deudaEquipo: this.obtenerDeudaPorEquipo(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-          deudaMes: this.obtenerDeudaMensual(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-          equiposDetalle: this.obtenerEquiposDetalle(clubId, selectedTemporadaId).pipe(catchError(() => of([]))),
-        }).pipe(
-          map((s) => s.resumen
-            ? {
-                resumen: s.resumen,
-                estadoPagos: s.estadoPagos ?? { pagados: 0, pendientes: 0 },
-                equiposCat: s.equiposCat,
-                partidosMes: s.partidosMes,
-                ingresosMes: s.ingresosMes,
-                deudaEquipo: s.deudaEquipo,
-                deudaMes: s.deudaMes,
-                equiposDetalle: s.equiposDetalle,
-              }
-            : null),
-          catchError(() => of(null))
-        )
-      : of(null);
+    const statsClubId$ = clubId > 0
+      ? of(clubId)
+      : (selectedTemporadaId > 0
+        ? this.temporadaService.get(selectedTemporadaId).pipe(
+            map((temporada) => temporada.club?.id ?? 0),
+            catchError(() => of(0))
+          )
+        : of(0));
+
+    const statsData$: Observable<DashboardStatsData | null> = statsClubId$.pipe(
+      switchMap((statsClubId) => statsClubId > 0
+        ? forkJoin({
+            resumen: this.obtenerResumen(statsClubId, selectedTemporadaId).pipe(catchError(() => of(null))),
+            estadoPagos: this.obtenerEstadoPagos(statsClubId, selectedTemporadaId).pipe(catchError(() => of(null))),
+            equiposCat: this.obtenerEquiposPorCategoria(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+            partidosMes: this.obtenerPartidosMensuales(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+            ingresosMes: this.obtenerIngresosMensuales(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+            deudaEquipo: this.obtenerDeudaPorEquipo(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+            deudaMes: this.obtenerDeudaMensual(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+            equiposDetalle: this.obtenerEquiposDetalle(statsClubId, selectedTemporadaId).pipe(catchError(() => of([]))),
+          }).pipe(
+            map((s) => s.resumen
+              ? {
+                  resumen: s.resumen,
+                  estadoPagos: s.estadoPagos ?? { pagados: 0, pendientes: 0 },
+                  equiposCat: s.equiposCat,
+                  partidosMes: s.partidosMes,
+                  ingresosMes: s.ingresosMes,
+                  deudaEquipo: s.deudaEquipo,
+                  deudaMes: s.deudaMes,
+                  equiposDetalle: s.equiposDetalle,
+                }
+              : null),
+            catchError(() => of(null))
+          )
+        : of(null)
+      )
+    );
 
     return forkJoin({
       clubes: clubs$,
