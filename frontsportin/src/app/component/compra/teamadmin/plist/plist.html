@@ -42,7 +42,7 @@
           <tbody>
             @for (oCompra of oPage()?.content; track oCompra.id) {
               <tr>
-                <td class="ps-3">{{ oCompra.articulo?.descripcion }}</td>
+                <td class="ps-3">{{ oCompra.articulo.descripcion }}</td>
                 <td class="text-end">{{ oCompra.cantidad }}</td>
                 <td class="text-end">{{ oCompra.precio | number:'1.2-2' }} €</td>
                 <td class="text-end pe-3">{{ (oCompra.cantidad * oCompra.precio) | number:'1.2-2' }} €</td>
@@ -89,7 +89,7 @@
             <app-paginacion [numPage]="numPage()" [numPages]="oPage()?.totalPages || 1" (pageChange)="goToPage($event)"></app-paginacion>
           </div>
           <div class="col-control right">
-            <app-botonera-rpp [numRpp]="numRpp()" (rppChange)="onRppChange($event)"></app-botonera-rpp>
+            <app-botonera-rpp [numRpp]="numRpp()" [options]="rppOptions" (rppChange)="onRppChange($event)"></app-botonera-rpp>
           </div>
         </div>
       </div>
@@ -103,36 +103,49 @@
               <strong class="text-truncate">Compra #{{ oCompra.id }}</strong>
             </div>
             <div class="card-body pb-2">
-              <ul class="list-unstyled mb-3">
-                <li class="mb-1">
-                  <i class="bi bi-hash text-muted me-1"></i>
-                  <span class="text-muted">ID:</span> {{ oCompra.id }}
-                </li>
-                <li class="mb-1">
-                  <i class="bi bi-123 text-muted me-1"></i>
-                  <span class="text-muted">Cantidad:</span> {{ oCompra.cantidad }}
-                </li>
-                <li class="mb-1">
-                  <i class="bi bi-tag text-muted me-1"></i>
-                  <span class="text-muted">Precio:</span> {{ oCompra.precio | number:'1.2-2' }} €
-                </li>
-              </ul>
-              @if (oCompra.articulo) {
-                <p class="mb-1">
-                  <strong>Artículo:</strong>
-                  <a [routerLink]="['/articulo/teamadmin/view', oCompra.articulo.id]" class="ms-1">
-                    {{ oCompra.articulo.descripcion }}
-                  </a>
-                </p>
-              }
-              @if (oCompra.factura && oCompra.factura.usuario) {
-                <p class="mb-1">
-                  <strong>Usuario:</strong>
-                  <a [routerLink]="['/usuario/teamadmin/view', oCompra.factura.usuario.id]" class="ms-1">
-                    {{ oCompra.factura.usuario.nombre }} {{ oCompra.factura.usuario.apellido1 }}
-                  </a>
-                </p>
-              }
+              <div class="row">
+                <div class="col">
+                  <ul class="list-unstyled mb-3">
+                    <li class="mb-1">
+                      <i class="bi bi-hash text-muted me-1"></i>
+                      <span class="text-muted">ID:</span> {{ oCompra.id }}
+                    </li>
+                    <li class="mb-1">
+                      <i class="bi bi-123 text-muted me-1"></i>
+                      <span class="text-muted">Cantidad:</span> {{ oCompra.cantidad }}
+                    </li>
+                    <li class="mb-1">
+                      <i class="bi bi-tag text-muted me-1"></i>
+                      <span class="text-muted">Precio:</span> {{ oCompra.precio | number:'1.2-2' }} €
+                    </li>
+                  </ul>
+                  @if (oCompra.articulo) {
+                    <p class="mb-1">
+                      <strong>Artículo:</strong>
+                      <a [routerLink]="['/articulo/teamadmin/view', oCompra.articulo.id]" class="ms-1">
+                        {{ oCompra.articulo.descripcion }}
+                      </a>
+                    </p>
+                  }
+                  @if (oCompra.factura) {
+                    <p class="mb-1">
+                      <strong>Usuario:</strong>
+                      <a [routerLink]="['/usuario/teamadmin/view', oCompra.factura.usuario.id]" class="ms-1">
+                        {{ oCompra.factura.usuario.nombre }} {{ oCompra.factura.usuario.apellido1 }}
+                      </a>
+                    </p>
+                    <p class="mb-1">
+                      <strong>Fecha:</strong>
+                      <span class="ms-1">{{ oCompra.factura.fecha | datetime }}</span>
+                    </p>
+                  }
+                </div>
+                @if (oCompra.articulo && oCompra.articulo.imagen) {
+                  <div class="col-auto d-flex align-items-start">
+                    <img [src]="'data:image/jpeg;base64,' + oCompra.articulo.imagen" class="img-thumbnail" style="max-height: 100px" alt="artículo"/>
+                  </div>
+                }
+              </div>
             </div>
             @if (!isDialogMode()) {
               <div class="card-footer d-flex justify-content-end gap-2">

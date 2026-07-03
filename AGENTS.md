@@ -704,6 +704,7 @@ Guía de referencia exhaustiva del diseño visual y de marcado HTML para todas l
 * Las compras dentro de una factura sólo pueden ser de artículos del club del usuario de la factura.
 * Las facturas tienen que contener al menos un artículo.
 
+* No debe existir ninguna compra sin facturar. Todas las compras deben estar asociadas a una factura de donde se puede obtener la fecha y el usuario.
 --
 
 * Las noticias de un club C deben de estar comentadassólo por usuarios del club C.

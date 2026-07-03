@@ -10,12 +10,13 @@ import { IPage } from '../../../../model/plist';
 import { FacturaService } from '../../../../service/factura-service';
 import { CompraService } from '../../../../service/compra';
 import { Paginacion } from '../../../shared/paginacion/paginacion';
+import { BotoneraRpp } from '../../../shared/botonera-rpp/botonera-rpp';
 import { BotoneraActionsPlist } from '../../../shared/botonera-actions-plist/botonera-actions-plist';
 
 @Component({
   standalone: true,
   selector: 'app-factura-teamadmin-plist',
-  imports: [CommonModule, RouterLink, Paginacion, BotoneraActionsPlist],
+  imports: [CommonModule, RouterLink, Paginacion, BotoneraRpp, BotoneraActionsPlist],
   templateUrl: './plist.html',
   styleUrl: './plist.css',
 })
@@ -26,6 +27,7 @@ export class FacturaTeamadminPlist implements OnInit, OnDestroy {
   oPage = signal<IPage<IFactura> | null>(null);
   numPage = signal<number>(0);
   numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);
   totalPages = computed(() => this.oPage()?.totalPages ?? 1);
   orderField = signal<string>('id');

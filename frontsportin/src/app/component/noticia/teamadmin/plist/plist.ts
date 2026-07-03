@@ -3,6 +3,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { DecimalPipe } from '@angular/common';
 import { Paginacion } from '../../../shared/paginacion/paginacion';
+import { BotoneraRpp } from '../../../shared/botonera-rpp/botonera-rpp';
 import { IPage } from '../../../../model/plist';
 import { INoticia } from '../../../../model/noticia';
 import { NoticiaService } from '../../../../service/noticia';
@@ -12,7 +13,7 @@ import { TrimPipe } from '../../../../pipe/trim-pipe';
 
 @Component({
   selector: 'app-noticia-teamadmin-plist',
-  imports: [Paginacion, RouterLink, DatetimePipe, TrimPipe, DecimalPipe],
+  imports: [Paginacion, BotoneraRpp, RouterLink, DatetimePipe, TrimPipe, DecimalPipe],
   templateUrl: './plist.html',
   styleUrl: './plist.css',
 })
@@ -21,7 +22,8 @@ export class NoticiaTeamadminPlist {
 
   oPage = signal<IPage<INoticia> | null>(null);
   numPage = signal<number>(0);
-  numRpp = signal<number>(5);
+  numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
 
   message = signal<string | null>(null);
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);

@@ -9,11 +9,12 @@ import { Paginacion } from '../../../shared/paginacion/paginacion';
 import { RouterLink } from '@angular/router';
 import { ModalRef } from '../../../shared/modal/modal-ref';
 import { MODAL_REF } from '../../../shared/modal/modal.tokens';
+import { BotoneraRpp } from '../../../shared/botonera-rpp/botonera-rpp';
 import { BotoneraActionsPlist } from '../../../shared/botonera-actions-plist/botonera-actions-plist';
 
 @Component({
   selector: 'app-equipo-teamadmin-plist',
-  imports: [Paginacion, RouterLink, BotoneraActionsPlist],
+  imports: [Paginacion, RouterLink, BotoneraRpp, BotoneraActionsPlist],
   templateUrl: './plist.html',
   styleUrl: './plist.css',
   standalone: true,
@@ -24,7 +25,8 @@ export class EquipoTeamadminPlist {
 
   oPage = signal<IPage<IEquipo> | null>(null);
   numPage = signal<number>(0);
-  numRpp = signal<number>(5);
+  numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);
   orderField = signal<string>('id');
   orderDirection = signal<'asc' | 'desc'>('asc');

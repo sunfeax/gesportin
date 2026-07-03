@@ -10,6 +10,7 @@ import { TipoarticuloService } from '../../../../service/tipoarticulo';
 import { IArticulo } from '../../../../model/articulo';
 import { ITipoarticulo } from '../../../../model/tipoarticulo';
 import { SessionService } from '../../../../service/session';
+import { ImageUploadService } from '../../../../service/image-upload';
 import { TipoarticuloPlistFinder } from '../../../tipoarticulo/finder/plist';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 
@@ -32,6 +33,7 @@ export class ArticuloTeamadminForm implements OnInit {
   private oTipoarticuloService = inject(TipoarticuloService);
   private modalService = inject(ModalService);
   private sessionService = inject(SessionService);
+  private imageUpload = inject(ImageUploadService);
 
   articuloForm!: FormGroup;
   error = signal<string | null>(null);
@@ -39,6 +41,7 @@ export class ArticuloTeamadminForm implements OnInit {
   submitting = signal(false);
   selectedTipoarticulo = signal<ITipoarticulo | null>(null);
   tipoarticuloError = signal(false);
+  selectedImage = signal<string | null>(null);
 
   ngOnInit(): void {
     this.initForm();
@@ -61,6 +64,7 @@ export class ArticuloTeamadminForm implements OnInit {
       precio: [0, [Validators.required, Validators.min(0)]],
       descuento: [0, [Validators.min(0), Validators.max(100)]],
       id_tipoarticulo: [null, Validators.required],
+      imagen: [null],
     });
 
     this.articuloForm.get('id_tipoarticulo')?.valueChanges.pipe(debounceTime(800), distinctUntilChanged()).subscribe((id) => {
@@ -92,6 +96,9 @@ export class ArticuloTeamadminForm implements OnInit {
       descuento: articulo.descuento,
       id_tipoarticulo: articulo.tipoarticulo?.id,
     });
+    if (articulo.imagen) {
+      this.selectedImage.set(this.imageUpload.toPreviewSrc(articulo.imagen));
+    }
     const tipo = articulo.tipoarticulo;
     if (articulo.tipoarticulo?.id) this.loadTipoarticulo(articulo.tipoarticulo.id);
   }
@@ -131,6 +138,19 @@ export class ArticuloTeamadminForm implements OnInit {
     });
   }
 
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    try {
+      const base64 = await this.imageUpload.fileToBase64(file);
+      this.articuloForm.patchValue({ imagen: base64 });
+      this.selectedImage.set(this.imageUpload.toPreviewSrc(base64));
+    } catch (err: any) {
+      this.notificacion.error(err.message || 'Error al cargar la imagen');
+    }
+  }
+
   onSubmit(): void {
     if (this.articuloForm.invalid) {
       this.notificacion.info('Por favor, complete todos los campos correctamente');
@@ -144,6 +164,7 @@ export class ArticuloTeamadminForm implements OnInit {
       precio: Number(this.articuloForm.value.precio),
       descuento: Number(this.articuloForm.value.descuento),
       tipoarticulo: { id: Number(this.articuloForm.value.id_tipoarticulo) },
+      imagen: this.articuloForm.value.imagen || null,
     };
 
     if (this.id() > 0) {

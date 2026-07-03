@@ -7,6 +7,7 @@ import { TemporadaService } from '../../../../service/temporada';
 import { EquipoService } from '../../../../service/equipo';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Paginacion } from '../../../shared/paginacion/paginacion';
+import { BotoneraRpp } from '../../../shared/botonera-rpp/botonera-rpp';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TrimPipe } from '../../../../pipe/trim-pipe';
 import { SessionService } from '../../../../service/session';
@@ -14,7 +15,7 @@ import { BotoneraActionsPlist } from '../../../shared/botonera-actions-plist/bot
 
 @Component({
   selector: 'app-temporada-teamadmin-plist',
-  imports: [Paginacion, RouterLink, TrimPipe, BotoneraActionsPlist],
+  imports: [Paginacion, BotoneraRpp, RouterLink, TrimPipe, BotoneraActionsPlist],
   templateUrl: './plist.html',
   styleUrl: './plist.css',
 })
@@ -24,6 +25,7 @@ export class TemporadaTeamadminPlist {
   oPage = signal<IPage<ITemporada> | null>(null);
   numPage = signal<number>(0);
   numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
 
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);
 

@@ -17,7 +17,7 @@ export class UsuarioTeamadminPlistPage {
   breadcrumbItems = signal<BreadcrumbItem[]>([
     { label: 'Mis Clubes', route: '/club/teamadmin' },
     { label: "" + this.id_club(), route: '/club/teamadmin/' + this.id_club() },
-    { label: 'Usuarios' }]);
+    { label: 'Usuarios', route: '/usuario/teamadmin' }]);
 
   constructor(private route: ActivatedRoute, private clubService: ClubService) { }
 
@@ -31,7 +31,7 @@ export class UsuarioTeamadminPlistPage {
       this.breadcrumbItems.set([
         { label: 'Mis Clubes', route: '/club/teamadmin' },
         { label: club.nombre, route: '/club/teamadmin/' + this.id_club() },
-        { label: 'Usuarios' }]);
+        { label: 'Usuarios', route: '/usuario/teamadmin' }]);
     });
   }
    

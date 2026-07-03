@@ -31,7 +31,8 @@ export class PartidoTeamadminPlist implements OnInit, OnDestroy {
 
   oPage = signal<IPage<IPartido> | null>(null);
   numPage = signal<number>(0);
-  numRpp = signal<number>(5);
+  numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
   rival = signal<string>('');
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;

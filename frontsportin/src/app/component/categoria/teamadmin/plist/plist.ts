@@ -10,12 +10,13 @@ import { IPage } from '../../../../model/plist';
 import { CategoriaService } from '../../../../service/categoria';
 import { TemporadaService } from '../../../../service/temporada';
 import { Paginacion } from '../../../shared/paginacion/paginacion';
+import { BotoneraRpp } from '../../../shared/botonera-rpp/botonera-rpp';
 import { BotoneraActionsPlist } from '../../../shared/botonera-actions-plist/botonera-actions-plist';
 import { ITemporada } from '../../../../model/temporada';
 
 @Component({
   selector: 'app-categoria-teamadmin-plist',
-  imports: [Paginacion, RouterLink, BotoneraActionsPlist],
+  imports: [Paginacion, RouterLink, BotoneraRpp, BotoneraActionsPlist],
   templateUrl: './plist.html',
   styleUrl: './plist.css',
   standalone: true,
@@ -26,6 +27,7 @@ export class CategoriaTeamadminPlist {
   oPage = signal<IPage<ICategoria> | null>(null);
   numPage = signal<number>(0);
   numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
 
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);
 

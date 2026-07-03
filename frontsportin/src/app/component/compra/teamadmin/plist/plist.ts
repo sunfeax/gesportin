@@ -27,7 +27,8 @@ export class CompraTeamadminPlist implements OnInit, OnDestroy {
   oPage = signal<IPage<ICompra> | null>(null);
   oFactura = signal<IFactura | null>(null);
   numPage = signal<number>(0);
-  numRpp = signal<number>(5);
+  numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
   orderField = signal<string>('id');
   orderDirection = signal<'asc' | 'desc'>('asc');
   totalRecords = computed(() => this.oPage()?.totalElements ?? 0);

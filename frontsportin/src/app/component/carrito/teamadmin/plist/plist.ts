@@ -25,7 +25,8 @@ export class CarritoTeamadminPlist implements OnInit, OnDestroy {
 
   oPage = signal<IPage<ICarrito> | null>(null);
   numPage = signal<number>(0);
-  numRpp = signal<number>(5);
+  numRpp = signal<number>(6);
+  rppOptions = [6, 12, 60, 120];
   descripcion = signal<string>('');
   private searchSubject = new Subject<string>();
   private searchSubscription?: Subscription;

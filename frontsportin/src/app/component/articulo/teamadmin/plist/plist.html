@@ -27,7 +27,7 @@
           <app-paginacion [numPage]="numPage()" [numPages]="oPage()?.totalPages || 1" (pageChange)="goToPage($event)"></app-paginacion>
         </div>
         <div class="col-control right">
-          <app-botonera-rpp [numRpp]="numRpp()" [options]="[6,12,60]" (rppChange)="onRppChange($event)"></app-botonera-rpp>
+          <app-botonera-rpp [numRpp]="numRpp()" [options]="[6,12,60,120]" (rppChange)="onRppChange($event)"></app-botonera-rpp>
         </div>
       </div>
       @if (!isDialogMode()) {
@@ -55,42 +55,51 @@
             <strong class="text-truncate">{{ oArticulo.descripcion }}</strong>
           </div>
           <div class="card-body pb-2">
-            <ul class="list-unstyled mb-3">
-              <li class="mb-1">
-                <i class="bi bi-hash text-muted me-1"></i>
-                <span class="text-muted">ID:</span> {{ oArticulo.id }}
-              </li>
-              <li class="mb-1">
-                <i class="bi bi-tag text-muted me-1"></i>
-                <span class="text-muted">Precio:</span> {{ oArticulo.precio | number:'1.2-2' }} €
-              </li>
-              @if (oArticulo.descuento > 0) {
-                <li class="mb-1">
-                  <i class="bi bi-percent text-muted me-1"></i>
-                  <span class="text-muted">Descuento:</span> {{ oArticulo.descuento }}%
-                </li>
+            <div class="row">
+              <div class="col">
+                <ul class="list-unstyled mb-3">
+                  <li class="mb-1">
+                    <i class="bi bi-hash text-muted me-1"></i>
+                    <span class="text-muted">ID:</span> {{ oArticulo.id }}
+                  </li>
+                  <li class="mb-1">
+                    <i class="bi bi-tag text-muted me-1"></i>
+                    <span class="text-muted">Precio:</span> {{ oArticulo.precio | number:'1.2-2' }} €
+                  </li>
+                  @if (oArticulo.descuento > 0) {
+                    <li class="mb-1">
+                      <i class="bi bi-percent text-muted me-1"></i>
+                      <span class="text-muted">Descuento:</span> {{ oArticulo.descuento }}%
+                    </li>
+                  }
+                </ul>
+                @if (oArticulo.tipoarticulo) {
+                  <p class="mb-1">
+                    <strong>Tipo artículo:</strong>
+                    <a [routerLink]="['/tipoarticulo/teamadmin/view', oArticulo.tipoarticulo.id]" class="ms-1">
+                      {{ oArticulo.tipoarticulo.descripcion }}
+                    </a>
+                  </p>
+                }
+                <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+                  @if (oArticulo.mediaPuntuacion > 0) {
+                    <span class="badge bg-warning text-dark opacity-75">
+                      <i class="bi bi-star-fill me-1"></i>{{ oArticulo.mediaPuntuacion | number:'1.1-1' }}/5
+                    </span>
+                  }
+                  <a [routerLink]="['/comentarioart/teamadmin/articulo', oArticulo.id]" class="badge bg-secondary opacity-75 text-decoration-none" style="cursor: pointer;" (click)="$event.stopPropagation()">
+                    <i class="bi bi-chat-text me-1"></i>{{ oArticulo.comentarioarts }} comentarios
+                  </a>
+                  <a [routerLink]="['/compra/teamadmin/articulo', oArticulo.id]" class="badge bg-secondary opacity-75 text-decoration-none" style="cursor: pointer;" (click)="$event.stopPropagation()">
+                    <i class="bi bi-cart me-1"></i>{{ oArticulo.compras }} compras
+                  </a>
+                </div>
+              </div>
+              @if (oArticulo.imagen) {
+                <div class="col-auto d-flex align-items-start">
+                  <img [src]="'data:image/jpeg;base64,' + oArticulo.imagen" class="img-thumbnail" style="max-height: 100px" alt="artículo"/>
+                </div>
               }
-            </ul>
-            @if (oArticulo.tipoarticulo) {
-              <p class="mb-1">
-                <strong>Tipo artículo:</strong>
-                <a [routerLink]="['/tipoarticulo/teamadmin/view', oArticulo.tipoarticulo.id]" class="ms-1">
-                  {{ oArticulo.tipoarticulo.descripcion }}
-                </a>
-              </p>
-            }
-            <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
-              @if (oArticulo.mediaPuntuacion > 0) {
-                <span class="badge bg-warning text-dark opacity-75">
-                  <i class="bi bi-star-fill me-1"></i>{{ oArticulo.mediaPuntuacion | number:'1.1-1' }}/5
-                </span>
-              }
-              <a [routerLink]="['/comentarioart/teamadmin/articulo', oArticulo.id]" class="badge bg-secondary opacity-75 text-decoration-none" style="cursor: pointer;" (click)="$event.stopPropagation()">
-                <i class="bi bi-chat-text me-1"></i>{{ oArticulo.comentarioarts }} comentarios
-              </a>
-              <a [routerLink]="['/compra/teamadmin/articulo', oArticulo.id]" class="badge bg-secondary opacity-75 text-decoration-none" style="cursor: pointer;" (click)="$event.stopPropagation()">
-                <i class="bi bi-cart me-1"></i>{{ oArticulo.compras }} compras
-              </a>
             </div>
           </div>
           @if (!isDialogMode()) {

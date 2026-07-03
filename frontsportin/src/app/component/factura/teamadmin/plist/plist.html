@@ -25,7 +25,6 @@
   <!-- 3. Controles: paginación y botón crear -->
   @if (totalRecords() > 0) {
     <div class="container-fluid p-0 my-1">
-      @if (totalPages() > 1) {
         <div class="controls-row mb-2">
           <div class="col-control left">
             <app-paginacion
@@ -34,8 +33,10 @@
               (pageChange)="goToPage($event)"
             ></app-paginacion>
           </div>
+          <div class="col-control right">
+            <app-botonera-rpp [numRpp]="numRpp()" [options]="rppOptions" (rppChange)="onRppChange($event)"></app-botonera-rpp>
+          </div>
         </div>
-      }
       <!-- Botón crear (oculto si hay filtro FK) -->
       @if (!id_usuario || id_usuario === 0) {
         <div class="d-flex my-1">
