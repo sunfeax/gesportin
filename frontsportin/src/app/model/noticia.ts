@@ -6,7 +6,7 @@ export interface INoticia{
   titulo: string;
   contenido: string;
   fecha: Date;
-  imagen: any | null;
+  imagen: string | null;
   club: IClub;
   comentarios: number;
   puntuaciones: number | null;

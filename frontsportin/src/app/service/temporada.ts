@@ -63,7 +63,7 @@ export class TemporadaService {
   update(temporada: Partial<ITemporada> & { club?: Partial<IClub> }): Observable<ITemporada> {
     if (this.security.isClubAdmin()) {
       const myClubId = this.security.getClubId();
-      temporada.club = { id: myClubId } as any;
+      temporada.club = { id: myClubId } as IClub;
       this.security.ensureClubOwnership(myClubId);
     } else {
       this.security.ensureClubOwnership(temporada.club?.id);
@@ -78,7 +78,7 @@ export class TemporadaService {
       const clubId = this.security.getClubId();
       if (clubId != null) {
         // casting because Partial<IClub> still allows just id but AOT complains
-        temporada.club = { id: clubId } as any;
+        temporada.club = { id: clubId } as IClub;
       }
     }
     const body = this.sanitizer.sanitize(temporada, { nestedIdFields: ['club'], removeFields: ['categorias'] });

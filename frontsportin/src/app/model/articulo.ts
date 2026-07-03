@@ -5,7 +5,7 @@ export interface IArticulo {
   descripcion: string
   precio: number
   descuento: number
-  imagen: any
+  imagen: string | null
   tipoarticulo: ITipoarticulo
   comentarioarts: number
   compras: number

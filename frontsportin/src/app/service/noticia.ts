@@ -5,6 +5,7 @@ import { PayloadSanitizerService } from './payload-sanitizer';
 import { IPage } from '../model/plist';
 import { Observable } from 'rxjs';
 import { INoticia } from '../model/noticia';
+import { IClub } from '../model/club';
 import { SecurityService } from './security.service';
 
 @Injectable({
@@ -18,10 +19,10 @@ export class NoticiaService {
   ) {}
 
 
-  update(noticia: any): Observable<number> {
+  update(noticia: Partial<INoticia>): Observable<number> {
     if (this.security.isClubAdmin()) {
       const myClubId = this.security.getClubId();
-      noticia.club = { id: myClubId };
+      noticia.club = { id: myClubId } as IClub;
       this.security.ensureClubOwnership(myClubId);
     } else {
       this.security.ensureClubOwnership(noticia.club?.id);
@@ -77,7 +78,7 @@ export class NoticiaService {
   create(noticia: INoticia): Observable<number> {
     if (this.security.isClubAdmin()) {
       const myClubId = this.security.getClubId();
-      noticia.club = { id: myClubId } as any;
+      noticia.club = { id: myClubId } as IClub;
       this.security.ensureClubOwnership(myClubId);
     } else {
       this.security.ensureClubOwnership(noticia.club?.id);
